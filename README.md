@@ -13,6 +13,18 @@ with public access via the CLI.
 
 https://crystalshards.xyz/?filter=tree
 install via crystal shards 
+add it to your shards.yml:
+  tree:
+    github: pebauer68/tree
+    branch: master
+
+cd to ./lib/tree  
+make build  
+make run  
+
+or clone from Github:  
+https://github.com/pebauer68/tree.git  
+
 
 ## Usage
 **./tree # run tree interactive**  
