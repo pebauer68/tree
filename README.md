@@ -11,9 +11,9 @@ install via crystal shards
 ./tree
 
 List vars, functions: 
-ls # list all
-ls vars
-ls functions
+ls # list all\
+ls vars\
+ls functions\
 
 Set,clear vars:
 counter = 5 
