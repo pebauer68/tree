@@ -8,16 +8,16 @@ https://crystalshards.xyz/?filter=tree
 install via crystal shards 
 
 ## Usage
-./tree # run tree interactive  
+**./tree # run tree interactive**  
 ./tree filename # run a file with plain text    
 
 
-List vars, functions:       
+**List vars, functions:**       
 ls # list all  
 ls vars  
 ls functions    
 
-Set,clear vars:  
+**Set,clear vars:**  
 counter = 5   
 name = "foo"  
 counter+ = 2  
