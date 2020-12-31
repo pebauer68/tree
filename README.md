@@ -8,12 +8,13 @@ https://crystalshards.xyz/?filter=tree
 install via crystal shards 
 
 ## Usage
-./tree
+>./tree optional <filename>  
 
-List vars, functions:   
-ls # list all  
-ls vars  
-ls functions  
+
+>List vars, functions:   
+>ls # list all  
+>ls vars  
+>ls functions  
 
 Set,clear vars:  
 counter = 5   
