@@ -91,7 +91,7 @@ Current calling convention:
 function (String,Int32) Int32  # every function must return an int 
 
 Current function table:   
-KEYWORDS = [ # list grows during runtime, when procs are added  
+KEYWORDS =  # list grows during runtime, when procs are added(via register function)  
     {"print", ->(x : String, y : Int32) { puts x; return 0 }},  
     {"load", ->(x : String, y : Int32) { Code.load x; return 0 }},  
     {"eval", ->(x : String, y : Int32) { eval x; return 0 }},  
