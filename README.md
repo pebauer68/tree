@@ -28,13 +28,15 @@ p varname
 print "hello"   
 
 Loops:
-curently only while is supported
-while < 100000  
-  some_function  
-end  
-while true
-  some function  
-end      
+curently only while is supported  
+
+    while < 100000  
+        some_function  
+    end
+      
+    while true
+      some function  
+    end      
 
 Call functions:  
 now            # display current time via the now function   
