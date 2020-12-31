@@ -23,11 +23,11 @@ name = "foo"
 counter+ = 2  
 clear          #clear all user vars    
 
-Print Strings, vars:  
+**Print Strings, vars:**  
 p varname   
 print "hello"   
 
-Loops:
+**Loops:**
 curently only while is supported  
 
     while < 100000  
@@ -38,14 +38,14 @@ curently only while is supported
       some function  
     end      
 
-Call functions:  
+**Call functions:**  
 now            # display current time via the now function   
 after 5 exit   # call exit in 5 seconds    
 every 5 now    # Set timers to run function every 5 seconds    
                # here we just print the time    
 stop = 1       # stop all started timers        
                
-Add your own functions:    
+**Add your own functions:**    
 -look into tree.cr  
 There is a hash with procs with functions loaded at startup from tree,       
 and a register function for adding functions later, which are  
@@ -60,7 +60,7 @@ Current calling convention:
 function (String,Int32) Int32  # every function must return an int  
 
 
-Load,run,list a script:    
+**Load,run,list,debug a script:**    
 load filename  
 run   
 run s  # single step by pressing return   
@@ -68,18 +68,20 @@ list
 Run a script from cli:  
 ./tree filename  
 
-Execute shell commands by ! prefix:    
+Toggle debug on/off:  
+debug  
+
+
+**Execute shell commands by ! prefix:**    
 !pwd        
 !icr     #use icr(interactive crystal), exit with ^D    
            #https://github.com/crystal-community/icr  
 
-Toggle debug on/off:  
-debug  
 
-Execute functions like they were typed in:  
+**Execute functions like they were typed in:**  
 eval help  
 
-Eval via the crystal binary:  
+**Eval via the crystal binary:**  
 Expression is compiled and then executed.  
 This will take about a second per evaluation.   
 ceval 1+2  
