@@ -35,9 +35,25 @@ curently only while is supported
     end
       
     while true
-      some function  
+      some_function  
     end      
+    
+**Performance:**
+crystal build --release tree.cr  # compile with --release !
 
+    time ../tree counter2.txt
+    Loaded: counter2.txt Number of lines: 13
+    code cleanup done in split_run()
+    21:05:48.308013
+    0
+    1000000
+    21:05:50.706197
+    reached end of file
+
+    real	0m2,401s 
+    user	0m2,496s
+    sys	0m0,103s
+        
 **Call functions:**  
 now            # display current time via the now function   
 after 5 exit   # call exit in 5 seconds    
