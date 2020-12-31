@@ -2,6 +2,13 @@
 
 tree is a dynamic testing environment for crystal functions
 
+It offers a CLI based REPL for interactive use.
+It is fast(see Performance) and scriptable. 
+Debugging on function level offers single stepping.   
+For Debugging of single commands icr or crystal play should be used.    
+Vars and functions are stored in runtime extendable hashes   
+with public access via the CLI.  
+
 ## Installation
 
 https://crystalshards.xyz/?filter=tree
