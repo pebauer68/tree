@@ -44,8 +44,9 @@ print "hello"
 curently while is supported  
 have a look at after and every for scheduling functions  
 
-    while < 100000  
-        some_function  
+    while counter < 100000  
+        some_function
+        counter+=1  
     end
       
     while true
