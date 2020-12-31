@@ -22,7 +22,13 @@ install via crystal shards
 **List vars, functions:**       
 ls # list all  
 ls vars  
-ls functions    
+ls functions   
+
+    ls vars
+    builtin vars: {"started" => false, "debug" => false, "filename" => "", "lines" => 0}
+    user vars: 
+    vars_int32: {"num" => 5}
+    vars_string: {"day" => "thursday"} 
 
 **Set,clear vars:**  
 counter = 5   
