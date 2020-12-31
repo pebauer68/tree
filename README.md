@@ -30,9 +30,9 @@ print "hello"
 Call functions:  
 now            # display current time via the now function   
 after 5 exit   # call exit in 5 seconds    
-every 5 now    # Set timers to run <function> every 5 seconds    
+every 5 now    # Set timers to run function every 5 seconds    
                # here we just print the time    
-               # stop all started timers by typing >stop = 1  
+stop = 1       # stop all started timers        
                
 Add your own functions:    
 -look into tree.cr  
