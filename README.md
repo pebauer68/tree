@@ -1,6 +1,6 @@
 # tree
 
-TODO: tree is a dynamic testing environment for crystal functions
+tree is a dynamic testing environment for crystal functions
 
 ## Installation
 
