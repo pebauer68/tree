@@ -41,7 +41,7 @@ p varname
 print "hello"   
 
 **Loops:**
-curently while is supported
+curently while is supported  
 have a look at after and every for scheduling functions  
 
     while < 100000  
