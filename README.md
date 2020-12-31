@@ -9,7 +9,7 @@ install via crystal shards
 
 ## Usage
 ./tree # run tree interactive  
-./tree filename  
+./tree filename # run a file with plain text    
 
 
 List vars, functions:       
