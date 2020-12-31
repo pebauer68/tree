@@ -8,7 +8,7 @@ https://crystalshards.xyz/?filter=tree
 install via crystal shards 
 
 ## Usage
-./tree optional <filename>  
+./tree filename 
 
 
 List vars, functions:   
