@@ -12,11 +12,11 @@ with public access via the CLI.
 ## Installation
 
 https://crystalshards.xyz/?filter=tree
-install via crystal shards 
-add it to your shards.yml:
-  tree:
-    github: pebauer68/tree
-    branch: master
+install via crystal shards  
+add it to your shards.yml:  
+  tree:  
+    github: pebauer68/tree  
+    branch: master  
 
 cd to ./lib/tree  
 make build  
