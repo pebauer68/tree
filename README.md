@@ -34,9 +34,9 @@ every 5 now    # Set timers to run <function> every 5 seconds
                # here we just print the time    
                # stop all started timers by typing >stop = 1  
                
-Add your own functions:
-look into tree.cr  
-There is a hash with procs with functions at startup from tree,       
+Add your own functions:    
+-look into tree.cr  
+There is a hash with procs with functions loaded at startup from tree,       
 and a register function for adding functions later, which are  
 merged into this hash of procs.  
 You need to follow the calling convention used in this  
