@@ -1,0 +1,13 @@
+name: tree
+version: 1.0.0
+
+authors:
+  - Peter Bauer <pebauer68@gmail.com>
+
+targets:
+  tree:
+    main: src/tree.cr
+
+crystal: 0.35.1
+
+license: MIT
