@@ -11,8 +11,8 @@ with public access via the CLI.
 
 ## Installation
 
-https://crystalshards.xyz/?filter=tree
-install via crystal shards  
+https://crystalshards.xyz/?filter=tree  
+install via crystal shards:    
 add it to your shards.yml:  
   tree:  
     github: pebauer68/tree  
