@@ -129,6 +129,15 @@ Run a script from cli:
 Toggle debug on/off:  
 debug  
 
+    Example for debug output:  
+    
+    Current line: 4 has 17 chars
+    "while counter < 5"
+    eval: while counter < 5
+    Word: while
+    Rol: counter < 5
+    x # => "counter < 5"
+    y # => 3
 
 **Execute shell commands by ! prefix:**    
 !pwd        
