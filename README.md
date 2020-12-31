@@ -25,7 +25,16 @@ clear          #clear all user vars
 
 Print Strings, vars:  
 p varname   
-print "hello"    
+print "hello"   
+
+Loops:
+curently only while is supported
+while < 100000  
+  some_function  
+end  
+while true
+  some function  
+end      
 
 Call functions:  
 now            # display current time via the now function   
@@ -45,7 +54,7 @@ proc hash, otherwise you get compile errors.
 If you need a different calling convention you can create  
 your own proc hash table, but this might create some overhead.  
 
-Current calling convetion:  
+Current calling convention:  
 function (String,Int32) Int32  # every function must return an int  
 
 
