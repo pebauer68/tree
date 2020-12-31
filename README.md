@@ -8,23 +8,23 @@ https://crystalshards.xyz/?filter=tree
 install via crystal shards 
 
 ## Usage
-./tree filename 
+./tree filename  
 
 
-List vars, functions:   
+List vars, functions:       
 ls # list all  
 ls vars  
 ls functions    
 
 Set,clear vars:  
 counter = 5   
-name = foo  
+name = "foo"  
 counter+ = 2  
 clear          #clear all user vars    
 
 Print Strings, vars:  
-p <varname>   
-print hello    
+p varname   
+print "hello"    
 
 Call functions:  
 now            # display current time    
@@ -33,17 +33,17 @@ every 5 now    # Set timers to run <function> every 5 seconds
                # here we just print the time    
                # stop all started timers by typing >stop = 1  
 
-Load,run,list a script:  
-load <filename>  
+Load,run,list a script:    
+load filename  
 run   
 run s  # single step by pressing return   
 list  
 Run a script from cli:  
-./tree <filename>  
+./tree filename  
 
-Execute shell commands by ! prefix:  
+Execute shell commands by ! prefix:    
 !pwd        
-!icr     #use icr(interactive crystal), exit with ^D  
+!icr     #use icr(interactive crystal), exit with ^D    
            #https://github.com/crystal-community/icr  
 
 Toggle debug on/off:  
