@@ -8,30 +8,30 @@ https://crystalshards.xyz/?filter=tree
 install via crystal shards 
 
 ## Usage
->./tree optional <filename>  
+./tree optional <filename>  
 
 
->List vars, functions:   
->ls # list all  
->ls vars  
->ls functions  
+List vars, functions:   
+ls # list all  
+ls vars  
+ls functions    
 
 Set,clear vars:  
 counter = 5   
 name = foo  
 counter+ = 2  
-clear          #clear all user vars  
+clear          #clear all user vars    
 
 Print Strings, vars:  
 p <varname>   
 print hello    
 
 Call functions:  
-now            # display current time  
-after 5 exit   # call exit in 5 seconds  
-every 5 now    # Set timers to run <function> every 5 seconds  
-                # here we just print the time  
-                # stop all started timers by typing >stop = 1  
+now            # display current time    
+after 5 exit   # call exit in 5 seconds    
+every 5 now    # Set timers to run <function> every 5 seconds    
+               # here we just print the time    
+               # stop all started timers by typing >stop = 1  
 
 Load,run,list a script:  
 load <filename>  
