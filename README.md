@@ -8,6 +8,7 @@ https://crystalshards.xyz/?filter=tree
 install via crystal shards 
 
 ## Usage
+./tree # run tree interactive  
 ./tree filename  
 
 
@@ -27,11 +28,26 @@ p varname
 print "hello"    
 
 Call functions:  
-now            # display current time    
+now            # display current time via the now function   
 after 5 exit   # call exit in 5 seconds    
 every 5 now    # Set timers to run <function> every 5 seconds    
                # here we just print the time    
                # stop all started timers by typing >stop = 1  
+               
+Add your own functions:
+look into tree.cr  
+There is a hash with procs with functions at startup from tree,       
+and a register function for adding functions later, which are  
+merged into this hash of procs.  
+You need to follow the calling convention used in this  
+proc hash, otherwise you get compile errors.  
+
+If you need a different calling convention you can create  
+your own proc hash table, but this might create some overhead.  
+
+Current calling convetion:  
+function (String,Int32) Int32  # every function must return an int  
+
 
 Load,run,list a script:    
 load filename  
