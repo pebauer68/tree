@@ -1,3 +1,4 @@
+#test the quoted functions
 def quoted_test()
 s1 = %Q[counter+=1]
 s2 = %Q[counter+= 1; print "12+3"]
@@ -15,6 +16,7 @@ puts line
 end
 #quoted_test()
 
+#split operator of type String by blank
 def split_operator_from_var(line,operator)
     offs = 0
     res_line=line
@@ -37,6 +39,9 @@ def split_operator_from_var(line,operator)
     return res_line
 end    
 
+#check if a char in a line is quoted
+#argument char defines the quotes used
+#e.g. " or ' or any other char
 def inside_quotes?(char,line,pos)
    offs = 0
    qpos = line.index(char)  # find first opening quote
