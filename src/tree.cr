@@ -21,7 +21,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
   {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},
-  {"let", ->(x : String, y : Int32) { let x; return 0 }},
+  {"let", ->(x : String, y : Int32) { let(x,y); return 0 }},
   {"delete", ->(x : String, y : Int32) { delete x; return 0 }},
   {"clear", ->(x : String, y : Int32) { clear x; return 0 }},
   {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},
@@ -181,7 +181,7 @@ def eval(line)
       ary.unshift("-")
       unshifted = true
     end
-    if !unshifted && ary.includes?("=") # found operator in command ?
+    if !unshifted && ary.includes?("=") # found = operator in command ?
         ary.unshift("let")
     end
     word = ary.shift                 # get first word
@@ -588,21 +588,51 @@ def pass
 end
 
 #set var to a value
-def let(x : String)
+#or set var to other var
+def let(x : String,y : Int32)
   # <myintvar> = 7
   # <mystringvar> = "7"
+  p! x,y if VARS["debug"]
   varname = x.split(" ")[0]
+  if varname.to_i?
+    print "numbers can't be varnames\n"
+    return
+  end    
   value = (x.split(" ")[2..].join(" ")) # rest of line
-  if value.to_i?
-    Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
-    Code.vars_string.delete(varname)
-  else if
-    value=value.gsub('"',"")  # remove ""
-    Code.vars_string = Code.vars_string.merge({varname => value})
-    Code.vars_int32.delete(varname)
-   end 
+  p! value if VARS["debug"]
+  value = check_if_var(value)
+  if value
+    if value.to_i? 
+      Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
+      Code.vars_string.delete(varname)
+    else if
+      value=value.gsub('"',"")  # remove ""
+      Code.vars_string = Code.vars_string.merge({varname => value})
+      Code.vars_int32.delete(varname)
+    end 
   end
+end
   # p! Code.vars_int32
+end
+
+#check if a var with that name exists
+#and return the value
+def check_if_var(x : String)
+ if x.includes?(" ") #it is no varname, includes a blank
+   return x 
+ end
+
+ if Code.vars_int32.has_key?(x)
+  value = Code.vars_int32[x]
+  return value.to_s
+ end
+
+ if Code.vars_string.has_key?(x)
+  value = Code.vars_string[x]
+  return value
+ end
+ return x  # return self if no key found
+
 end
 
 #clear all vars in the hashes
@@ -624,11 +654,11 @@ def _p_(x : String)
   if Code.vars_int32.has_key?(x)
     result=Code.vars_int32[x].to_i
     p result
-    let("p.result = #{result}")  
+    let("p.result = #{result}",3)  
   else if Code.vars_string.has_key?(x)
     result = Code.vars_string[x]
     p result
-    let("p.result = #{result}")
+    let("p.result = #{result}",3)
   else
     puts "var not found" 
   end

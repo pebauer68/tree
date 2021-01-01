@@ -33,7 +33,7 @@ https://github.com/pebauer68/tree.git
 
 **List vars, functions:**       
 ls # list all  
-ls vars  
+ls vars       
 ls functions   
 
     ls vars
@@ -41,6 +41,9 @@ ls functions
     user vars: 
     vars_int32: {"num" => 5}
     vars_string: {"day" => "thursday"} 
+
+if you enter a var name and press return the var value will be shown.   
+if you enter a function name it will be called.  
 
 **Set,clear,delete vars:**  
 counter = 5   
@@ -52,11 +55,12 @@ counter+ = 1   # example for a type mismatch
 Error in: counter+=1  
 Missing hash key: "counter"  # add function searches for int var named counter    
 
-clear           #clear all user vars    
-delete varname  #delete a user var
+clear            #clear all user vars    
+delete var name  #delete a user var
 
 **Print Strings, vars:**  
-p varname   
+p var name 
+# the var p.result is set to varname for later use     
 print "hello"   
 
 **Loops:**
@@ -93,7 +97,10 @@ now            # display current time via the now function
 after 5 exit   # call exit in 5 seconds    
 every 5 now    # Set timers to run function every 5 seconds    
                # here we just print the time    
-stop = 1       # stop all started timers        
+stop = 1       # stop all started timers 
+
+functions can set a public var with the last result on exit:       
+some_function.result = result                
                
 **Add your own functions:**    
 -look into tree.cr  
@@ -175,8 +182,7 @@ Expression is compiled and then executed.
 This will take about a second per evaluation.   
 ceval 1+2  
 ceval puts "aha"  
-The result is stored as a string in the user var:  
-ceval.result  
+# the var ceval.result is set for later use  
 
 ## Development
 
