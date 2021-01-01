@@ -22,6 +22,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
   {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},
   {"let", ->(x : String, y : Int32) { let x; return 0 }},
+  {"delete", ->(x : String, y : Int32) { delete x; return 0 }},
   {"clear", ->(x : String, y : Int32) { clear x; return 0 }},
   {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},
   {"!", ->(x : String, y : Int32) { system(x); return 0 }},
@@ -607,6 +608,13 @@ end
 def clear(x : String)
     Code.vars_int32.clear
     Code.vars_string.clear
+end
+
+#delete a var in the hashes
+def delete(x : String)
+  varname = x.split(" ")[0]
+  Code.vars_string.delete(varname)
+  Code.vars_int32.delete(varname)
 end
 
 #print var value to stdout
