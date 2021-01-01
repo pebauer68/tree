@@ -3,7 +3,7 @@
 tree is a dynamic testing environment for crystal functions
 
 It offers a CLI based REPL for interactive use.
-It is fast(see Performance) and scriptable. 
+It is fast(see performance) and scriptable. 
 Debugging on function level offers single stepping.   
 For debugging of single commands icr or crystal play should be used.    
 Vars and functions are stored in runtime extendable hashes   
@@ -42,11 +42,12 @@ ls functions
     vars_int32: {"num" => 5}
     vars_string: {"day" => "thursday"} 
 
-**Set,clear vars:**  
+**Set,clear,delete vars:**  
 counter = 5   
 name = "foo"  
 counter+ = 2  
-clear          #clear all user vars    
+clear           #clear all user vars    
+delete varname  #delete a user var
 
 **Print Strings, vars:**  
 p varname   
@@ -90,7 +91,7 @@ stop = 1       # stop all started timers
                
 **Add your own functions:**    
 -look into tree.cr  
-There is a hash with procs with functions loaded at startup from tree,       
+There is a hash with procs(function pointers) loaded at startup from tree,       
 and a register function for adding functions later, which are  
 merged into this hash of procs.  
 You need to follow the calling convention used in this  
@@ -155,8 +156,8 @@ debug
 
 **Execute shell commands by ! prefix:**    
 !pwd        
-!icr     #use icr(interactive crystal), exit with ^D    
-           #https://github.com/crystal-community/icr  
+!icr #use icr(interactive crystal), exit with ^D    
+https://github.com/crystal-community/icr  
 
 
 **Execute functions like they were typed in:**  
