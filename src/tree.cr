@@ -90,10 +90,29 @@ def ls ( x : String, y : Int32)
     print "vars_string: ",Code.vars_string,"\n" if Code.vars_string.size > 0  
   end
   if ((y == 1 && x == "functions") || (y == 0))
-    puts "functions:"
-    Code.kwh.each { |d| puts d }
+    print "functions: "
+    startflag=true
+    Code.kwh.each { |d|
+     #puts d     #  {"run", #<Proc(String, Int32, Int32):0x55a87122fcf0>}
+     print "," if !startflag
+     puts_filtered d
+     startflag = false 
+     }
+     print "\n"
   end  
 end
+
+
+def puts_filtered(d)
+ pd = d.inspect
+ eindex = pd.index('"',2) # search for closing quote
+ if eindex
+  res = pd[2,eindex-2]
+  print res
+ end  
+ return
+end
+
 
 #read line from STDIN
 def read_command

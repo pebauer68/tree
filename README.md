@@ -36,11 +36,13 @@ ls # list all
 ls vars       
 ls functions   
 
-    ls vars
+    ls 
     builtin vars: {"started" => false, "debug" => false, "filename" => "", "lines" => 0}
     user vars: 
     vars_int32: {"num" => 5}
     vars_string: {"day" => "thursday"} 
+    functions: run,split_run,list,print,load,eval,ceval,after,+,-,inc,dec  
+    ,<,while,every,ls,let,delete,clear,p,!,now,help,debug,test,sleep,pass,end,cls,exit  
 
 if you enter a var name and press return the var value will be shown.   
 if you enter a function name it will be called.  
