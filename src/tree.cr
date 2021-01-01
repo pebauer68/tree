@@ -533,9 +533,6 @@ if y >=2
 end 
 end
 
-
-
-
 #call function after x seconds
 def _after_(x : String, y : Int32)  
 print "function after called with: \n",x,"\n"  
@@ -589,9 +586,11 @@ end
 
 #set var to a value
 #or set var to other var
+#no operators like +-* supported on right side of = for now
+# <myintvar> = 7
+# <mystringvar> = "some test"
+# a = b
 def let(x : String,y : Int32)
-  # <myintvar> = 7
-  # <mystringvar> = "7"
   p! x,y if VARS["debug"]
   varname = x.split(" ")[0]
   if varname.to_i?
@@ -599,9 +598,11 @@ def let(x : String,y : Int32)
     return
   end    
   value = (x.split(" ")[2..].join(" ")) # rest of line
-  p! value if VARS["debug"]
-  value = check_if_var(value)
-  if value
+  flag1 = inside_quotes?('"',value,0) || inside_quotes?("'",value,0)
+  if !(flag1 || value.to_i?)
+     value = check_if_var(value)
+  end   
+  if value 
     if value.to_i? 
       Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
       Code.vars_string.delete(varname)
@@ -612,26 +613,26 @@ def let(x : String,y : Int32)
     end 
   end
 end
-  # p! Code.vars_int32
 end
 
 #check if a var with that name exists
 #and return the value
 def check_if_var(x : String)
- if x.includes?(" ") #it is no varname, includes a blank
+ if x.includes?(" ") #it is no valid varname, includes a blank
    return x 
  end
-
+ 
  if Code.vars_int32.has_key?(x)
   value = Code.vars_int32[x]
   return value.to_s
  end
 
  if Code.vars_string.has_key?(x)
-  value = Code.vars_string[x]
+  value = '"' + Code.vars_string[x] + '"'
   return value
  end
- return x  # return self if no key found
+ print "var " + '"' + x + '"' + " not found\n"
+ return value  # return self if no key found
 
 end
 
