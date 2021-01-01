@@ -46,6 +46,12 @@ ls functions
 counter = 5   
 name = "foo"  
 counter+ = 2  
+dynamic typing:  
+counter = "7"  # set counter var to String "7" is possible  
+counter+ = 1   # example for a type mismatch  
+Error in: counter+=1  
+Missing hash key: "counter"  # add function searches for int var named counter    
+
 clear           #clear all user vars    
 delete varname  #delete a user var
 
@@ -118,7 +124,8 @@ KEYWORDS =  # list grows during runtime, when procs are added(via register funct
     {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},  
     {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},  
     {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},  
-    {"let", ->(x : String, y : Int32) { let x; return 0 }},  
+    {"let", ->(x : String, y : Int32) { let x; return 0 }}, 
+    {"delete", ->(x : String, y : Int32) { delete x; return 0 }}, 
     {"clear", ->(x : String, y : Int32) { clear x; return 0 }},  
     {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},  
     {"!", ->(x : String, y : Int32) { system(x); return 0 }},  

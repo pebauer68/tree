@@ -108,11 +108,12 @@ List vars, functions:
 >ls vars
 >ls functions
 
-Set,clear vars:
+Set,clear,delete vars:
 >counter = 5 
 >name = foo
 >counter+ = 2
->clear          #clear all user vars
+>clear           #clear all user vars
+>delete varname  #delete a user var
 
 Print Strings, vars:
 >p <varname> 
@@ -606,8 +607,8 @@ end
 
 #clear all vars in the hashes
 def clear(x : String)
-    Code.vars_int32.clear
-    Code.vars_string.clear
+  Code.vars_int32.clear
+  Code.vars_string.clear
 end
 
 #delete a var in the hashes
@@ -618,11 +619,16 @@ def delete(x : String)
 end
 
 #print var value to stdout
+#var value is stored in var: p.result 
 def _p_(x : String)
   if Code.vars_int32.has_key?(x)
-    p Code.vars_int32[x].to_i  
+    result=Code.vars_int32[x].to_i
+    p result
+    let("p.result = #{result}")  
   else if Code.vars_string.has_key?(x)
-    p Code.vars_string[x]
+    result = Code.vars_string[x]
+    p result
+    let("p.result = #{result}")
   else
     puts "var not found" 
   end
