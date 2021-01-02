@@ -184,7 +184,7 @@ Expression is compiled and then executed.
 This will take about a second per evaluation.   
 ceval 1+2  
 ceval puts "aha"  
-# the var ceval.result is set for later use  
+\# the var ceval.result is set for later use  
 
 ## Development
 
