@@ -4,6 +4,7 @@ require "./quoted.cr"
 VARS = {
   "started"  => true,       #used in prompt()
   "debug"    => false,      #toggle debug message output by entering debug
+  "singlestep" => false,    #toggle singlestepping
   "filename" => "",         #currrent file loaded
   "lines"    => 0,          #number of lines
 }
@@ -29,6 +30,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"now", ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return 0 }},
   {"help", ->(x : String, y : Int32) { help(x); return 0 }},
   {"debug", ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now: ", VARS["debug"]; return 0 }},
+  {"singlestep", ->(x : String, y : Int32) { VARS["singlestep"] = !VARS["singlestep"]; puts "singlestep is now: ", VARS["singlestep"]; return 0 }},
   {"test", ->(x : String, y : Int32) { procloop; return 0 }},
   {"sleep",->(x : String, y : Int32) { sleep(x.to_i); return 0 }},
   {"pass", ->(x : String, y : Int32) { pass; return 0 }},
@@ -181,7 +183,7 @@ if VARS["debug"]
   end
 end
 
-#eval a line by
+#eval (interactive mode) a line by
 #search for operators and 
 #looking up the commands in the keyword hash
 def eval(line)
@@ -200,8 +202,9 @@ def eval(line)
       ary.unshift("-")
       unshifted = true
     end
+    #when all operators done we do assignment
     if !unshifted && ary.includes?("=") # found = operator in command ?
-        ary.unshift("let")
+        ary.unshift("let")              # do assignment when operators done 
     end
     word = ary.shift                 # get first word
     return if word.starts_with?("#") # skip comments
@@ -232,7 +235,7 @@ def lookup_vars(word)
  return ret
 end
 
-#eval a line by
+#eval (scripting mode) a line by
 #search for operators and 
 #looking up the commands in the keyword hash
 def eval2(line)
@@ -240,7 +243,7 @@ def eval2(line)
   word = ""
   if line && line != ""
     ary = [] of String
-    ary = line.split(" ") # here simple split is used
+    ary = line.split(" ") # here simple split is used which is faster
     unshifted = false
     if ary.includes?("+") # found operator in command ?
       ary.unshift("+")
@@ -370,11 +373,11 @@ module Code
     return if VARS["filename"] == ""
     if arg == "s" 
       puts "press return - execute a single line"
-      puts "press s to stop the program"
+      puts "press q to stop the program"
       puts "press c to continue run"
-      @@step = true
+      VARS["singlestep"] = true
     else
-      @@step = false
+      VARS["singlestep"] = false
     end    
     
     @@current_line = 0
@@ -398,17 +401,19 @@ module Code
         print "Jumping to: ",@@current_line+1," ",@@codelines[@@current_line],"\n" if VARS["debug"]
       else
         @@current_line += 1
-        sread = STDIN.gets("\n",1) if @@step    # wait for return key  
-        if sread == "c"        # keys for single step mode
-           print "continue\n"
-           @@step = false
-        end        
-        if sread == "q"
-          print "stop\n"
-          @@step = false
-
-          return
-        end    
+        if VARS["singlestep"]    # wait for return key
+          sread = STDIN.gets() 
+          eval(sread) if (sread && sread.size > 1)
+           if sread == "c"        # keys for single step mode
+             print "continue\n"
+             VARS["singlestep"] = false
+           end        
+           if sread == "q"
+            print "stop\n"
+            VARS["singlestep"] = false
+           return
+           end
+        end   
       end
       break if @@current_line >= codelines.size
     end # of loop
@@ -650,7 +655,9 @@ def check_if_var(x : String)
   value = '"' + Code.vars_string[x] + '"'
   return value
  end
- print "var " + '"' + x + '"' + " not found\n"
+ fn ="check_if_var"
+ #most of the time check_if_var should be silent
+ #print fn + " ():" +" var " + '"' + x + '"' + " not found\n"
  return value  # return self if no key found
 
 end
@@ -680,7 +687,8 @@ def _p_(x : String)
     p result
     let("p.result = #{result}",3)
   else
-    puts "var not found" 
+    fn = "_p_"
+    puts fn + "(): " + "var not found" 
   end
  end
 end
@@ -701,14 +709,34 @@ end
 # example:  counter+= 3
 # splitted: counter + = 3
 def plus(x : String, y : Int32)
-  p! x if VARS["debug"] 
+  p! "plus()",x,y if VARS["debug"]
+  if y == 5 # countera = counterb + 1
+     lside, rside = x.split(" = ",remove_empty: true)
+     p! rside, lside if VARS["debug"]
+     rside_s = rside.split(" ",remove_empty: true)
+     #if "a = a + 1"
+     rside_s.insert(2,"=")
+     rside_j = (rside_s.join(" "))
+     if lside == rside_s[0]
+      x = rside_j # rewrite "counter = counter + 1" to "counter + = 1"
+      y = 4
+     else
+      #rside_res = rside_s[0].to_i + rside_s[3].to_i
+      rside_res = (value = check_if_var(rside_s[0])).not_nil!.to_i + rside_s[3].to_i
+      Code.vars_int32[lside] = rside_res
+      p! rside_res if VARS["debug"]
+      return 0
+     end
+     p! rside_s,rside_j,rside_res if VARS["debug"]
+     #return 0
+  end 
   if y == 4
     varname = x.split(" ")[0]
     value = x.split(" ")[3].to_i
     Code.vars_int32[varname] += value
   else
     puts "Method plus needs at least 4 arguments"
-    puts "got: ", x
+    puts "got: ", x,y
   end
   return 0
 end
