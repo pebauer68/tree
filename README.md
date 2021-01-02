@@ -28,7 +28,7 @@ https://github.com/pebauer68/tree.git
 
 ## Usage
 **./tree # run tree interactive**  
-./tree filename # run a file with plain text    
+./tree filename # run a script file with plain text    
 
 
 **List vars, functions:**       
