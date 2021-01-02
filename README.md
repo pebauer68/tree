@@ -2,6 +2,8 @@
 
 tree is a dynamic testing environment for crystal functions
 
+1[](https://1.bp.blogspot.com/-Dhdk4jwtLYM/X_C7Lmrm62I/AAAAAAAAmgM/iBP_O6QceWoc7W0NETOR334k2xFUs60sQCLcBGAsYHQ/s1499/Peek%2B2021-01-02%2B19-17.gif)
+
 It offers a CLI based REPL for interactive use.
 It is fast(see performance) and scriptable. 
 Debugging on function level offers single stepping.   
