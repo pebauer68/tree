@@ -105,7 +105,7 @@ functions can set a public var with the last result on exit:
 some_function.result = result                
                
 **Add your own functions:**    
--look into tree.cr  
+-Edit tree.cr and add your favorite functions    
 There is a hash with procs(function pointers) loaded at startup from tree,       
 and a register function for adding functions later, which are  
 merged into this hash of procs.  
@@ -118,7 +118,7 @@ your own proc hash table, but this might create some overhead.
 Current calling convention:  
 function (String,Int32) Int32  # every function must return an int 
 
-Current function table:   
+Current function table in tree.cr:  
 KEYWORDS =  # list grows during runtime, when procs are added(via register function)  
     {"print", ->(x : String, y : Int32) { puts x; return 0 }},  
     {"load", ->(x : String, y : Int32) { Code.load x; return 0 }},  
