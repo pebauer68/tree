@@ -7,7 +7,7 @@ It is fast(see performance) and scriptable.
 Debugging on function level offers single stepping.   
 For debugging of single commands icr or crystal play should be used.    
 Vars and functions are stored in runtime extendable hashes   
-with public access via the CLI.  
+with public access via the CLI and your scripts.  
 
 ## Installation
 
