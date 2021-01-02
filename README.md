@@ -62,7 +62,7 @@ delete var name  #delete a user var
 
 **Print Strings, vars:**  
 p var name 
-# the var p.result is set to varname for later use     
+\# the var p.result is set to varname for later use     
 print "hello"   
 
 **Loops:**
