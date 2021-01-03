@@ -6,8 +6,11 @@ VARS = {
   "debug"    => false,      #toggle debug message output by entering debug
   "singlestep" => false,    #toggle singlestepping for functions
   "filename" => "",         #currrent file loaded
-  "lines"    => 0,          #number of lines
+  "lines"    => 0,          #number of lines 
 }
+
+CONTEXTS = [] of String
+
 KEYWORDS = [ # list grows during runtime, when procs are added
   {"print", ->(x : String, y : Int32) { puts x; return 0 }},
   {"load", ->(x : String, y : Int32) { Code.load x; return 0 }},
@@ -20,6 +23,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"dec", ->(x : String, y : Int32) { dec(x, y) }},
   {"<", ->(x : String, y : Int32) { _lower_(x, y) }},
   {">", ->(x : String, y : Int32) { _higher_(x, y) }},
+  {"if", ->(x : String, y : Int32) { Code._if_(x, y); return 0 }},
   {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
   {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},
@@ -77,6 +81,7 @@ def prompt
   print ">"
 end
 
+#ls()=
 #list VARS and/or functions
 def ls ( x : String, y : Int32)
   p! x,y if VARS["debug"]
@@ -91,6 +96,7 @@ def ls ( x : String, y : Int32)
     print "user vars: \n"
     print "vars_int32: ",Code.vars_int32,"\n" if Code.vars_int32.size > 0
     print "vars_string: ",Code.vars_string,"\n" if Code.vars_string.size > 0  
+    print "contexts: ",CONTEXTS,"\n" if CONTEXTS.size > 0
   end
   if ((y == 1 && x == "functions") || (y == 0))
     print "functions: "
@@ -330,6 +336,7 @@ def full_split(line)
   return ary
 end
 
+#code()=
 #load,run,list code
 #loop fuction: while, end 
 #register and merge procs
@@ -345,6 +352,7 @@ module Code
   class_property vars_string = { } of String => String
   class_property jmp_trigger = "no"
   class_property start_line = "no"
+  class_property in_while = false
   class_property skip_lines = false
   extend self
   
@@ -371,6 +379,7 @@ module Code
     end
   end
 
+  #run()=
   #run code
   #run s # single step mode on
   def run(arg)
@@ -400,7 +409,7 @@ module Code
         @@skip_lines = false if line.includes?("end")
       end
       if @@jmp_trigger != "no"
-        @@current_line = @@jmp_trigger.to_i
+        @@current_line = @@jmp_trigger.to_i 
         @@jmp_trigger = "no" # reset trigger
         print "Jumping to: ",@@current_line+1," ",@@codelines[@@current_line],"\n" if VARS["debug"]
       else
@@ -487,11 +496,13 @@ module Code
     @@kwh = Code.kws
   end
   
+  #while()=
   #implement while
   def _while_(x : String, y : Int32)
     # while a < 77
     p! x,y if VARS["debug"]
     @@start_line = @@current_line.to_s
+    CONTEXTS.push("in_while") if !CONTEXTS.index("in_while")
 
     if y == 3
       varname, cmp , value = x.split(" ")
@@ -518,15 +529,84 @@ module Code
       if result == 0 # loop conditions not met
         print "set skip lines: true","\n" if VARS["debug"]    
         @@skip_lines = true
+        p! CONTEXTS if VARS["debug"]
+        CONTEXTS.pop
         return
       end
   end
 
+  #end()=
   #implement end
   def _end_
-    @@jmp_trigger = @@start_line
-    print "set jmp trigger: ",@@start_line.to_i+1,"\n" if VARS["debug"]
+    p! CONTEXTS if VARS["debug"]
+    context = CONTEXTS.last?
+    @@jmp_trigger = @@start_line if (context == "in_while")
+    CONTEXTS.pop if context == "in_if"
+    print "set jmp trigger: ",@@start_line.to_i+1,"\n" if VARS["debug"]  # this is for while
   end
+
+  #if()=""
+  #implement if
+  def _if_(x : String, y : Int32)
+    # if a      #  if true returns 1      # if a var has a Int value > 0 it is true
+                                          # if a var has a string value with size > 0 it is true 
+                #  if false returns 0     
+                #  if var <a> does not exist returns error "Nil assertion failed", script is stopped
+
+    p! x,y if VARS["debug"]
+    CONTEXTS.push("in_if")
+
+    if y == 3
+      varname, cmp , value = x.split(" ")
+       if cmp == "<" #check operator
+        result = _lower_("#{varname} #{cmp} #{value}", 3)
+       elsif
+        cmp == ">"
+        result = _higher_("#{varname} #{cmp} #{value}", 3)
+       else
+        result = 0
+       end 
+     end  
+     # if true
+     if y == 1   # if a - single token !
+        cmp = x.split(" ")[0]
+           
+        res=false
+
+        if cmp
+          value=cmp.to_i?
+          if value 
+            res = true if value > 0
+          end    
+        end
+
+        if Code.vars_int32.has_key?(cmp)
+          value = Code.vars_int32[cmp]
+          res = true if value > 0
+        elsif Code.vars_string.has_key?(cmp.gsub('"',""))
+          value = Code.vars_string[cmp]
+          res = true if value.size >= 1  # string length
+          else
+          res = true if cmp.size > 2 # a string on its own is true when longer ""
+          res = false if cmp == "false"
+        end   
+ 
+        if res == true #check int,string value or var with value
+          result = 1
+        else
+          result = 0
+        end
+
+        print "result of if: ",result,"\n" if VARS["debug"]   
+      end
+
+      if result == 0 # if condition not met
+        print "set skip lines: true","\n" if VARS["debug"]    
+        @@skip_lines = true
+        return
+      end
+  end
+  #end of if
 end   
 #end of Code module
 
@@ -730,6 +810,7 @@ end
 # add value to a var
 # example:  counter+= 3
 # splitted: counter + = 3
+# a = b + x works
 def plus(x : String, y : Int32)
   p! "plus()",x,y if VARS["debug"]
   if y == 5 # countera = counterb + 1
