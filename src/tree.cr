@@ -423,13 +423,6 @@ module Code
     end # of loop
     puts "reached end of file"
   end # of run code
-
-  #list the code
-  #def list
-  #  @@codelines.each { |line|
-  #    puts line
-  #  }
-  #end
   
   #split codelines into tokens
   #seperate operaters from var names by blank
@@ -464,10 +457,9 @@ module Code
   #list the code
   def list
     @@current_line=0
-    while line = @@codelines[@@current_line] 
-      puts line
+    while @@current_line < @@last_line 
+      puts @@codelines[@@current_line] 
       @@current_line += 1
-      break if @@current_line >= @@last_line
     end  
   end
 
@@ -806,7 +798,7 @@ def dec(x : String, y : Int32)
     varname = x.split(" ")[0]
     Code.vars_int32[varname] -= 1
   else
-    puts "Method inc needs 1 argument"
+    puts "Method dec needs 1 argument"
     puts "got: ", x
   end
   return 0
