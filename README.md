@@ -11,6 +11,7 @@ For debugging of single commands icr or crystal play should be used.
 Vars and functions are stored in runtime extendable hashes   
 with public access via the CLI and your scripts.  
 
+
 ## Installation
 
 https://crystalshards.xyz/?filter=tree  
@@ -50,12 +51,15 @@ if you enter a var name and press return the var value will be shown.
 if you enter a function name it will be called.  
 
 **Set,clear,delete vars:**  
-counter = 5   
-name = "foo"  
+counter = 5    # type Int32 is used
+name = "foo"   # type String is used
 counter+ = 2  
 dynamic typing:  
 counter = "7"  # set counter var to String "7" is possible  
-counter+ = 1   # example for a type mismatch  
+               # the type of a var it infered from the last assignment
+               # 
+counter = "some_string"  
+counter+ = 1   # example for a type mismatch Int32 vs String
 Error in: counter+=1  
 Missing hash key: "counter"  # add function searches for int var named counter    
 
@@ -68,7 +72,7 @@ p var name
 print "hello"   
 
 **Loops:**
-curently while is supported  
+curently while is supported by the scripter 
 have a look at after and every for scheduling functions  
 
     while counter < 100000  
@@ -100,7 +104,8 @@ crystal build --release tree.cr  # compile with --release !
 now            # display current time via the now function   
 after 5 exit   # call exit in 5 seconds    
 every 5 now    # Set timers to run function every 5 seconds    
-               # here we just print the time    
+               # here we just print the time   
+every 5 p a    # print value of var a to stdout every 5 seconds          
 stop = 1       # stop all started timers 
 
 functions can set a public var with the last result on exit:       
@@ -151,16 +156,16 @@ KEYWORDS =  # list grows during runtime, when procs are added(via register funct
     {"exit", ->(x : String, y : Int32) { exit(0) }},  
 
 
-**Load,run,list,debug a script:**    
-load filename  
-run   
-run s  # single step by pressing return   
-list  
+**Load,run,list,debug,singlestep a script:**    
+load filename # any comments and not needed blanks are removed from scripting code
+run           # run the loaded file 
+run s         # single step by pressing return   
+singlestep    # toggle single stepping of functions on/off
+debug         # Toggle debug output on/off:  
+list          # list the loaded script
+
 Run a script from cli:  
 ./tree filename  
-
-Toggle debug on/off:  
-debug  
 
     Example for debug output:  
     

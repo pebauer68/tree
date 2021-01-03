@@ -4,7 +4,7 @@ require "./quoted.cr"
 VARS = {
   "started"  => true,       #used in prompt()
   "debug"    => false,      #toggle debug message output by entering debug
-  "singlestep" => false,    #toggle singlestepping
+  "singlestep" => false,    #toggle singlestepping for functions
   "filename" => "",         #currrent file loaded
   "lines"    => 0,          #number of lines
 }
@@ -18,7 +18,8 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"-", ->(x : String, y : Int32) { minus(x, y) }},
   {"inc", ->(x : String, y : Int32) { inc(x, y) }},
   {"dec", ->(x : String, y : Int32) { dec(x, y) }},
-  {"<", ->(x : String, y : Int32) { lower(x, y) }},
+  {"<", ->(x : String, y : Int32) { _lower_(x, y) }},
+  {">", ->(x : String, y : Int32) { _higher_(x, y) }},
   {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
   {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
   {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},
@@ -266,7 +267,8 @@ def eval2(line)
     if Code.kwh.try &.has_key?(word)
       Code.kwh.not_nil![word].call(rol, ary.size)
     else
-      puts "Command #{word} not found"
+      res = lookup_vars(word)
+      print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
     end
   end
 end
@@ -315,7 +317,9 @@ def full_split(line)
     return ["ceval",line.lchop("ceval ")]
   end
 
-  #pre - split operators
+  #pre - split operators - is only run once on per line eval or a loadad file !
+  line = split_operator_from_var(line,"<") 
+  line = split_operator_from_var(line,">") 
   line = split_operator_from_var(line,"=")   
   line = split_operator_from_var(line,"+")
   line = split_operator_from_var(line,"-")
@@ -335,7 +339,6 @@ module Code
   class_property kwh = Hash(String, Proc(String, Int32, Int32)).new
   class_property codelines = [] of String
   class_property lines = 0
-  #class_property line = ""
   class_property current_line = 0
   class_property last_line = 0
   class_property vars_int32 = { } of String => Int32 
@@ -361,6 +364,7 @@ module Code
       VARS["filename"] = filename
       VARS["lines"] = lines
       print "Loaded: ", filename, " Number of lines: ", lines, "\n"
+      @@last_line=@@codelines.size
       split_run
     else
       puts "File #{filename} not found"
@@ -415,17 +419,17 @@ module Code
            end
         end   
       end
-      break if @@current_line >= codelines.size
+      break if @@current_line >= @@last_line
     end # of loop
     puts "reached end of file"
   end # of run code
 
   #list the code
-  def list
-    @@codelines.each { |line|
-      puts line
-    }
-  end
+  #def list
+  #  @@codelines.each { |line|
+  #    puts line
+  #  }
+  #end
   
   #split codelines into tokens
   #seperate operaters from var names by blank
@@ -433,29 +437,38 @@ module Code
   def split_run()
     return if VARS["filename"] == ""
     @@current_line = 0
-    size = @@codelines.size
+    @@last_line=0
+    delflag=false
     while line = @@codelines[@@current_line] 
       print "Current line:",@@current_line+1,"\n" if VARS["debug"]
       print "Split line: ", line," ",line.size, "\n" if VARS["debug"]
       ary = [] of String
       if (!(line.starts_with?("#") || full_split(line).size == 0 ))  # skip comment lines and empty lines
-        #split by blank
-        ary = full_split(line) 
+        ary = full_split(line)
         @@codelines[@@current_line] = ary.join(" ")  # write line back to codelines 
       else
         @@codelines.delete_at(@@current_line) # remove line from code
+        delflag=true
       end  
-      @@current_line += 1
-      break if @@current_line >= codelines.size
+      if !delflag
+        @@current_line += 1
+      else
+        delflag=false
+      end     
+      @@last_line=@@current_line
+      break if @@current_line >= @@codelines.size
     end # of loop
     puts "code cleanup done in split_run()"
   end # of split code
 
   #list the code
   def list
-    @@codelines.each { |line|
+    @@current_line=0
+    while line = @@codelines[@@current_line] 
       puts line
-    }
+      @@current_line += 1
+      break if @@current_line >= @@last_line
+    end  
   end
 
   #merge the keyword hash 
@@ -492,7 +505,10 @@ module Code
       varname, cmp , value = x.split(" ")
       
        if cmp == "<" #check operator
-        result = lower("#{varname} #{cmp} #{value}", 3)
+        result = _lower_("#{varname} #{cmp} #{value}", 3)
+       elsif
+        cmp == ">"
+        result = _higher_("#{varname} #{cmp} #{value}", 3)
        else
         result = 0
        end 
@@ -535,7 +551,7 @@ class Timer
 def timer_test(x , y)
 if y >=2
   interval = x.split(" ")[0]
-  job = x.split(" ")[1]
+  job = x.split(" ")[1..].join(" ") # get the rest of line
     puts "timer_test called with interval: #{interval}" 
     eval ("stop = 0")
     return if interval == ""
@@ -559,7 +575,7 @@ end
 
 #call function after x seconds
 def _after_(x : String, y : Int32)  
-print "function after called with: \n",x,"\n"  
+print "function after called with: \n",x,y,"\n"  
   spawn do
     if y >= 2
       sleep S.shift(x, start = true).to_i
@@ -694,11 +710,25 @@ def _p_(x : String)
 end
 
 # lower "<" operator
-def lower(x : String, y : Int32)
+def _lower_(x : String, y : Int32)
   # counter < 10
+  p! "lower()",x,y if VARS["debug"]
   varname, operand, val = x.split(" ")
   value = val.to_i
   if Code.vars_int32[varname] < value
+    return 1
+  else
+    return 0
+  end
+end
+
+# higher ">" operator
+def _higher_(x : String, y : Int32)
+  # counter > 10
+  p! "higher()",x,y if VARS["debug"]
+  varname, operand, val = x.split(" ")
+  value = val.to_i
+  if Code.vars_int32[varname] > value
     return 1
   else
     return 0
