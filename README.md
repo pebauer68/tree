@@ -66,20 +66,20 @@ Missing hash key: "counter"  # add function searches for int var named counter
 clear            #clear all user vars    
 delete var name  #delete a user var
 
-**True and false vs 0,1**
-Functions return 0 on false, and 1 on true !
-There is no boolean type in the scripting environment.
-However the word "true" can be used for "while true" 
+**True and false vs 0,1**  
+Functions return 0 on false, and 1 on true !  
+There is no boolean type in the scripting environment.  
+However the word "true" can be used for "while true"   
 
-In the scipting environment:
-0     #false
-1     #true
-""    #empty strings are false
-"a"   #any string with a value is true
-var   #any var with a value > 0 or a string with size >1 is true
+In the scipting environment:  
+0     #false  
+1     #true  
+""    #empty strings are false  
+"a"   #any string with a value is true  
+var   #any var with a value > 0 or a string with size >1 is true  
 
-The if operator can be used for true/false checks.
-I you want to see the result turn on debug.
+The if operator can be used for true/false checks.  
+I you want to see the result turn on debug.  
 
 
     Here a=1
