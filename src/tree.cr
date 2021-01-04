@@ -709,7 +709,7 @@ def let(x : String,y : Int32)
   p! x,y if VARS["debug"]
   varname = x.split(" ")[0]
   if varname.to_i?
-    print "numbers can't be varnames\n"
+    print "numbers can't be var names\n"
     return
   end    
   value = (x.split(" ")[2..].join(" ")) # rest of line
@@ -730,9 +730,14 @@ def let(x : String,y : Int32)
 end
 end
 
+#check_if_var()=
 #check if a var with that name exists
 #and return the value
 def check_if_var(x : String)
+ if x.to_i?    #just a number ?
+    return x 
+ end   
+
  if x.includes?(" ") #it is no valid varname, includes a blank
    return x 
  end
@@ -813,7 +818,7 @@ end
 # add value to a var
 # example:  counter+= 3
 # splitted: counter + = 3
-# a = b + x works
+# a = b + 1 works
 def plus(x : String, y : Int32)
   p! "plus()",x,y if VARS["debug"]
   if y == 5 # countera = counterb + 1
@@ -841,7 +846,7 @@ def plus(x : String, y : Int32)
     value = x.split(" ")[3].to_i
     Code.vars_int32[varname] += value
   else
-    puts "Method plus needs at least 4 arguments"
+    puts "Method plus failed, check arguments"
     puts "got: ", x,y
   end
   return 0
