@@ -9,7 +9,7 @@ VARS = {
   "lines"    => 0,          #number of lines 
 }
 
-CONTEXTS = [] of String
+CONTEXTS = [] of String     #block contexts like "in_while","in_if" are added at runtime
 
 KEYWORDS = [ # list grows during runtime, when procs are added
   {"print", ->(x : String, y : Int32) { puts x; return 0 }},
@@ -46,8 +46,8 @@ KEYWORDS = [ # list grows during runtime, when procs are added
 
 #register Code evaluater functions and procs
 Code.register
-if ARGV.size == 1 # run file non interactive
-  file = ARGV[0]
+if ARGV.size == 1        # run file non interactive
+  file = ARGV[0]         # get the filename
   eval("load #{file}")
   eval2("run")
   exit
@@ -324,11 +324,11 @@ def full_split(line)
   end
 
   #pre - split operators - is only run once on per line eval or a loadad file !
-  line = split_operator_from_var(line,"<") 
-  line = split_operator_from_var(line,">") 
-  line = split_operator_from_var(line,"=")   
-  line = split_operator_from_var(line,"+")
-  line = split_operator_from_var(line,"-")
+  to_split = "<>=+-"
+  to_split.each_char { |char|
+    line = split_operator_from_var(line,char)
+  }
+ 
   line.split(" ", remove_empty: true) { |string|
     ary << string                 # "a+=1" ->  ["a", "+", "=", "1"]
   }
@@ -430,7 +430,8 @@ module Code
       end
       break if @@current_line >= @@last_line
     end # of loop
-    puts "reached end of file"
+    print "reached end of file in line: ",@@current_line,"\n"
+    @@current_line=0
   end # of run code
   
   #split codelines into tokens
@@ -461,8 +462,10 @@ module Code
       break if @@current_line >= @@codelines.size
     end # of loop
     puts "code cleanup done in split_run()"
+    print "Current number of lines: ",@@current_line,"\n"
   end # of split code
 
+  #list()=
   #list the code
   def list
     @@current_line=0
@@ -823,7 +826,7 @@ def plus(x : String, y : Int32)
      if lside == rside_s[0]
       x = rside_j # rewrite "counter = counter + 1" to "counter + = 1"
       y = 4
-     else
+     else  # numeric int only !
       #rside_res = rside_s[0].to_i + rside_s[3].to_i
       rside_res = (value = check_if_var(rside_s[0])).not_nil!.to_i + rside_s[3].to_i
       Code.vars_int32[lside] = rside_res

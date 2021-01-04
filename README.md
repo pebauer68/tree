@@ -66,6 +66,36 @@ Missing hash key: "counter"  # add function searches for int var named counter
 clear            #clear all user vars    
 delete var name  #delete a user var
 
+**True and false vs 0,1**
+Functions return 0 on false, and 1 on true !
+There is no boolean type in the scripting environment.
+However the word "true" can be used for "while true" 
+
+In the scipting environment:
+0     #false
+1     #true
+""    #empty strings are false
+"a"   #any string with a value is true
+var   #any var with a value > 0 or a string with size >1 is true
+
+The if operator can be used for true/false checks.
+I you want to see the result turn on debug.
+
+
+    Here a=1
+    >if a
+    eval: if a
+    Line in: 
+    if a
+    Line splitted: 
+    ["if", "a"]
+    Word: if
+    Rol: a
+    x # => "a"
+    y # => 1
+    result of if: 1
+
+
 **Print Strings, vars:**  
 p var name 
 \# the var p.result is set to varname for later use     
@@ -137,6 +167,8 @@ KEYWORDS =  # list grows during runtime, when procs are added(via register funct
     {"inc", ->(x : String, y : Int32) { inc(x, y) }},  
     {"dec", ->(x : String, y : Int32) { dec(x, y) }},  
     {"<", ->(x : String, y : Int32) { lower(x, y) }},  
+    {">", ->(x : String, y : Int32) { _higher_(x, y) }},
+    {"if", ->(x : String, y : Int32) { Code._if_(x, y); return 0 }},
     {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},  
     {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},  
     {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},  
