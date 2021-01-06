@@ -7,11 +7,14 @@ VARS = {
   "singlestep" => false,    #toggle singlestepping for functions
   "filename" => "",         #currrent file loaded
   "lines"    => 0,          #number of lines 
+  "interactive" => true,    #more output in anteraktive mode than in run mode
+                            #but we do not write to stdout in an asignment e.g. a=now()
 }
 
 CONTEXTS = [] of String     #block contexts like "in_while","in_if" are added at runtime
 
 KEYWORDS = [ # list grows during runtime, when procs are added
+  {"typeof", ->(x : String, y : Int32) { _typeof_(x,y) ; return 0 }}, 
   {"print", ->(x : String, y : Int32) { puts x; return 0 }},
   {"load", ->(x : String, y : Int32) { Code.load x; return 0 }},
   {"eval", ->(x : String, y : Int32) { eval x; return 0 }},
@@ -33,6 +36,7 @@ KEYWORDS = [ # list grows during runtime, when procs are added
   {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},
   {"!", ->(x : String, y : Int32) { system(x); return 0 }},
   {"now", ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return 0 }},
+  {"date", ->(x : String, y : Int32) { puts Time.local.to_s("%Y-%m-%d"); return 0 }},
   {"help", ->(x : String, y : Int32) { help(x); return 0 }},
   {"debug", ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now: ", VARS["debug"]; return 0 }},
   {"singlestep", ->(x : String, y : Int32) { VARS["singlestep"] = !VARS["singlestep"]; puts "singlestep is now: ", VARS["singlestep"]; return 0 }},
@@ -110,7 +114,6 @@ def ls ( x : String, y : Int32)
      print "\n"
   end  
 end
-
 
 def puts_filtered(d)
  pd = d.inspect
@@ -190,11 +193,12 @@ if VARS["debug"]
   end
 end
 
+#eval()=
 #eval (interactive mode) a line by
 #search for operators and 
 #looking up the commands in the keyword hash
 def eval(line)
-  print "eval: ",line,"\n" if VARS["debug"]
+  print "eval(): ",line,"\n" if VARS["debug"]
   word = ""
   if line && line != ""
     ary = [] of String
@@ -210,8 +214,10 @@ def eval(line)
       unshifted = true
     end
     #when all operators done we do assignment
-    if !unshifted && ary.includes?("=") # found = operator in command ?
-        ary.unshift("let")              # do assignment when operators done 
+    if !unshifted && ary.includes?("=") # found assign = operator in command ?
+      flag = check_equal(line)
+      ary.unshift("let") if !flag
+      ary.unshift("if") if flag       # found equal operator == 
     end
     word = ary.shift                 # get first word
     return if word.starts_with?("#") # skip comments
@@ -221,7 +227,7 @@ def eval(line)
     print "Rol: ",rol,"\n" if VARS["debug"]
 
     if Code.kwh.try &.has_key?(word)
-      Code.kwh.not_nil![word].call(rol, ary.size) #lookup functions
+      Code.kwh.not_nil![word].call(rol, ary.size) #lookup and call functions
     else 
       res = lookup_vars(word)
       print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
@@ -261,7 +267,9 @@ def eval2(line)
       unshifted = true
     end
     if !unshifted && ary.includes?("=") # found operator in command ?
-        ary.unshift("let")
+        flag = check_equal(line)
+        ary.unshift("let") if !flag
+        ary.unshift("if") if flag       # found equal operator ==
     end
     word = ary.shift                 # get first word
     return if word.starts_with?("#") # skip comments
@@ -278,6 +286,22 @@ def eval2(line)
     end
   end
 end
+
+
+def check_equal(line : String)
+    pos = line.index("==")
+    pos = line.index("= =") if !pos
+    if pos
+     res = !inside_quotes?('"',line,pos)
+    else
+     res = false
+    end 
+    #p! line,pos,res if VARS["debug"]
+    return res  
+end
+
+    
+
 
 
 #eval a line by  
@@ -309,6 +333,7 @@ def run_cmd(cmd, args)
   end
 end
 
+#full_split()=
 #split line into words by blank
 #seperate operators from var names
 def full_split(line)
@@ -323,7 +348,7 @@ def full_split(line)
     return ["ceval",line.lchop("ceval ")]
   end
 
-  #pre - split operators - is only run once on per line eval or a loadad file !
+  #pre - split operators - is only run once per line eval or a loadad file !
   to_split = "<>=+-"
   to_split.each_char { |char|
     line = split_operator_from_var(line,char)
@@ -350,8 +375,8 @@ module Code
   class_property last_line = 0
   class_property vars_int32 = { } of String => Int32 
   class_property vars_string = { } of String => String
-  class_property jmp_trigger = "no"
-  class_property start_line = "no"
+  class_property jmp_trigger = -1
+  class_property start_line = -1
   class_property in_while = false
   class_property skip_lines = false
   extend self
@@ -384,6 +409,7 @@ module Code
   #run s # single step mode on
   def run(arg)
     return if VARS["filename"] == ""
+    VARS["interactive"] = false
     if arg == "s" 
       puts "press return - execute a single line"
       puts "press q to stop the program"
@@ -395,8 +421,8 @@ module Code
     
     @@current_line = 0
     @@skip_lines = false
-    @@jmp_trigger = "no"
-    @@start_line = "no"
+    @@jmp_trigger = -1
+    @@start_line = -1
 
     size = @@codelines.size
     while line = @@codelines[@@current_line] 
@@ -406,11 +432,14 @@ module Code
         eval2(line)
       else
         # print "find end of block\n"
-        @@skip_lines = false if line.includes?("end")
+        if line.includes?("end")
+          print "end found: ","in line: ",@@current_line+1,"\n" if VARS["debug"]
+          @@skip_lines = false
+        end  
       end
-      if @@jmp_trigger != "no"
+      if @@jmp_trigger != -1 # we got a number !?
         @@current_line = @@jmp_trigger.to_i 
-        @@jmp_trigger = "no" # reset trigger
+        @@jmp_trigger = -1 # reset trigger
         print "Jumping to: ",@@current_line+1," ",@@codelines[@@current_line],"\n" if VARS["debug"]
       else
         @@current_line += 1
@@ -432,6 +461,7 @@ module Code
     end # of loop
     print "reached end of file in line: ",@@current_line,"\n"
     @@current_line=0
+    VARS["interactive"] = true
   end # of run code
   
   #split codelines into tokens
@@ -504,7 +534,7 @@ module Code
   def _while_(x : String, y : Int32)
     # while a < 77
     p! x,y if VARS["debug"]
-    @@start_line = @@current_line.to_s
+    @@start_line = @@current_line
     CONTEXTS.push("in_while") if !CONTEXTS.index("in_while")
 
     if y == 3
@@ -529,11 +559,12 @@ module Code
         end
       end
 
-      if result == 0 # loop conditions not met
+      if result == 0 # loop conditions for while not met
         print "set skip lines: true","\n" if VARS["debug"]    
         @@skip_lines = true
+        @@start_line = -1
         p! CONTEXTS if VARS["debug"]
-        CONTEXTS.pop
+        #CONTEXTS.pop
         return
       end
   end
@@ -543,9 +574,10 @@ module Code
   def _end_
     p! CONTEXTS if VARS["debug"]
     context = CONTEXTS.last?
-    @@jmp_trigger = @@start_line if (context == "in_while")
-    CONTEXTS.pop if context == "in_if"
-    print "set jmp trigger: ",@@start_line.to_i+1,"\n" if VARS["debug"]  # this is for while
+    @@jmp_trigger = @@start_line  # while blocks set a start line
+    if VARS["debug"]   
+      print "set jmp trigger: ",@@start_line+1,"\n" 
+    end  
   end
 
   #if()=""
@@ -557,9 +589,9 @@ module Code
                 #  if var <a> does not exist returns error "Nil assertion failed", script is stopped
 
     p! x,y if VARS["debug"]
-    CONTEXTS.push("in_if")
+    CONTEXTS.push("in_if") if !CONTEXTS.index("in_if")
 
-    if y == 3
+    if y == 3  # "if a < 2"
       varname, cmp , value = x.split(" ")
        if cmp == "<" #check operator
         result = _lower_("#{varname} #{cmp} #{value}", 3)
@@ -570,13 +602,29 @@ module Code
         result = 0
        end 
      end  
+
+
+    # lets start with numeric comparison 
+    if y == 5   # "if a = = 1" - equal operator
+      _if_, varname, cmp , cmp, value = x.split(" ")
+      #p!  _if_, varname, cmp , cmp, value
+      if Code.vars_int32[varname] == value.to_i   # equal ???
+        result = 1
+      else
+        result = 0
+      end
+      print "result of if: ",result,"\n" if VARS["debug"]
+    end
+
+
+
      # if true
      if y == 1   # if a - single token !
         cmp = x.split(" ")[0]
            
         res=false
 
-        if cmp
+        if cmp   # double nil check
           value=cmp.to_i?
           if value 
             res = true if value > 0
@@ -600,7 +648,7 @@ module Code
           result = 0
         end
 
-        print "result of if: ",result,"\n" if VARS["debug"]   
+        print "result of if(): ",result,"\n" if VARS["debug"]   
       end
 
       if result == 0 # if condition not met
@@ -699,6 +747,8 @@ end
 def pass
 end
 
+#let()=
+#set var to result of function 
 #set var to a value
 #or set var to other var
 #no operators like +-* supported on right side of = for now
@@ -706,29 +756,64 @@ end
 # <mystringvar> = "some test"
 # a = b
 def let(x : String,y : Int32)
-  p! x,y if VARS["debug"]
-  varname = x.split(" ")[0]
-  if varname.to_i?
-    print "numbers can't be var names\n"
-    return
-  end    
-  value = (x.split(" ")[2..].join(" ")) # rest of line
-  flag1 = inside_quotes?('"',value,0) || inside_quotes?("'",value,0)
-  if !(flag1 || value.to_i?)
-     value = check_if_var(value)
-  end   
-  if value 
-    if value.to_i? 
-      Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
-      Code.vars_string.delete(varname)
-    else if
-      value=value.gsub('"',"")  # remove ""
-      Code.vars_string = Code.vars_string.merge({varname => value})
-      Code.vars_int32.delete(varname)
-    end 
+  p! "let()",x,y if VARS["debug"]
+   varname = x.split(" ")[0]  # number on left side
+   if varname.to_i?
+      print "numbers can't be var names\n"
+      return
+   end    
+   value = (x.split(" ")[3..].join(" ")) # rest of line
+   word = x.split(" ")[2]
+   
+   istate = VARS["interactive"] 
+   VARS["interactive"] = false   #we dont want to see output of typeof
+   t = _typeof_(word,1) #is it a proc ?
+   VARS["interactive"] = istate
+
+   
+   if t == "proc"
+    if Code.kwh.try &.has_key?(word)
+      y1 = y - 3 # we cant use y here, because it is already used !!!
+                 # we call a proc inside a proc and share the same set of vars !!! 
+      istate = VARS["interactive"] 
+      VARS["interactive"] = false    
+      Code.kwh.not_nil![word].call(value, y1) #lookup and call functions
+      VARS["interactive"] = istate
+    #check result of call
+    s = word + ".result" # function result string
+    if Code.vars_string.has_key?(s)
+      res = Code.vars_string[s]
+      Code.vars_string[varname] = res
+      return
+    else 
+      return
+    end   
+   end
+  end 
+      
+   value = (x.split(" ")[2..].join(" ")) # rest of line
+   #flag1 = inside_quotes?('"',value,0) || inside_quotes?("'",value,0) # works but it can be faster
+   if (value[0] == '"' && value[-1] == '"')  # its a quoted string
+      flag1 = true
+   else
+    flag1 = false
+   end  
+   if !(flag1 || value.to_i?)      # if its inside quotes or an int it is for sure no var
+      value = check_if_var(value)     # lets see it the var really exists and get its value
+   end   
+   if value 
+     if value.to_i? 
+       Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
+       Code.vars_string.delete(varname)
+     else if
+       value=value.gsub('"',"")  # remove ""
+       Code.vars_string = Code.vars_string.merge({varname => value})
+       Code.vars_int32.delete(varname)
+       end 
+    end
   end
 end
-end
+
 
 #check_if_var()=
 #check if a var with that name exists
@@ -771,6 +856,7 @@ def delete(x : String)
   Code.vars_int32.delete(varname)
 end
 
+#_p_()=
 #print var value to stdout
 #var value is stored in var: p.result 
 def _p_(x : String)
@@ -892,3 +978,26 @@ def dec(x : String, y : Int32)
   end
   return 0
 end
+
+def _typeof_(x : String, y : Int32)
+  print "typeof() got: ",x,"\n"  if VARS["debug"]
+  return if y != 1   # check number of args
+  if (x[0] == '"' && x[-1] == '"')   # a (quoted) string
+    res = "string"
+  elsif x.to_i?
+    res = "int32"
+  elsif Code.kwh.try &.has_key?(x)
+    res = "proc" 
+  elsif Code.vars_string.has_key?(x)
+    res = "var-string"
+  elsif Code.vars_int32.has_key?(x)
+    res = "var-int32"
+  else 
+    res = "unknown type"
+  end
+  if VARS["interactive"]
+    puts res 
+  end
+  Code.vars_string = Code.vars_string.merge({"typeof.result" => res}) 
+  return res 
+end  

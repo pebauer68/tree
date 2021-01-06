@@ -31,7 +31,25 @@ https://github.com/pebauer68/tree.git
 
 ## Usage
 **./tree # run tree interactive**  
-./tree filename # run a script file with plain text    
+./tree filename # run a script file with plain text  
+
+**concept and syntax**
+The syntax is borrowed from crystal and ruby.  
+Words in a line of code and operators are seperated or splitted  
+by blank when you load the file into the scripter.  
+
+Currently there are no parentheses supported.   
+For the moment the following operators are supported in the following
+functions of tree.cr. Operators can be added by writing additional wrappers  
+around the crystal standard lib.    
+Only one command is allowed per line - no semicolon supported !  
+
++    add()    
+-    sub()  
+=    let() assign int or string to var or one var to another var    
+==   if()  equal for numbers, TODO: equal for strings
+<    lower()  
+>    higher()  
 
 
 **List vars, functions:**       
@@ -139,8 +157,11 @@ every 5 p a    # print value of var a to stdout every 5 seconds
 stop = 1       # stop all started timers 
 
 functions can set a public var with the last result on exit:       
-some_function.result = result                
-               
+some_function.result = result 
+
+res = ""                   #init a var   
+res = typeof("some text")  #get type of a value  
+                              
 **Add your own functions:**    
 -Edit tree.cr and add your favorite functions    
 There is a hash with procs(function pointers) loaded at startup from tree,       
