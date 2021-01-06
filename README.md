@@ -44,8 +44,8 @@ functions of tree.cr. Operators can be added by writing additional wrappers
 around the crystal standard lib.    
 Only one command is allowed per line - no semicolon supported !  
 
-+    add()    
--    sub()  
++    plus()    
+-    minus()  
 =    let() assign int or string to var or one var to another var    
 ==   if()  equal for numbers, TODO: equal for strings
 <    lower()  
@@ -122,6 +122,7 @@ print "hello"
 **Loops:**
 curently while is supported by the scripter 
 have a look at after and every for scheduling functions  
+TODO: nested loops  
 
     while counter < 100000  
         some_function
