@@ -39,9 +39,8 @@ Words in a line of code and operators are seperated(splitted)
 by blank when you load the file into the scripter.  
 
 Currently there are no parentheses supported.   
-For the moment the following operators are supported in the following
-functions of tree.cr. Operators can be added by writing additional wrappers  
-around the crystal standard lib. Only one command is allowed per line.
+Operators can be added by writing additional wrappers  
+around the crystal standard lib. Only one command is allowed per line.  
 Semicolon is not supported !  
 
 
