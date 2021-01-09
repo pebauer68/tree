@@ -8,8 +8,8 @@ It offers a CLI based REPL for interactive use.
 It is fast(see performance) and scriptable. 
 Debugging on function level offers single stepping.   
 For debugging of single commands icr or crystal play should be used.    
-Vars and functions are stored in runtime extendable hashes   
-with public access via the CLI and your scripts.  
+Vars and functions are stored in hashes with public access  
+via the CLI and your scripts.  
 
 
 ## Installation
@@ -41,15 +41,17 @@ by blank when you load the file into the scripter.
 Currently there are no parentheses supported.   
 For the moment the following operators are supported in the following
 functions of tree.cr. Operators can be added by writing additional wrappers  
-around the crystal standard lib.    
-Only one command is allowed per line - no semicolon supported !  
+around the crystal standard lib. Only one command is allowed per line.
+Semicolon is not supported !  
 
-+    plus()    
--    minus()  
+**Basic operators and their function name**  
+
+\+    plus()    
+\-    minus()  
 =    let() assign int or string to var or one var to another var    
 ==   if()  equal for numbers, TODO: equal for strings
 <    lower()  
->    higher()  
+\>    higher()  
 
 
 **List vars, functions:**       

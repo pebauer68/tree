@@ -13,43 +13,44 @@ VARS = {
 
 CONTEXTS = [] of String     #block contexts like "in_while","in_if" are added at runtime
 
-KEYWORDS = [ # list grows during runtime, when procs are added
-  {"typeof", ->(x : String, y : Int32) { _typeof_(x,y) ; return 0 }}, 
-  {"print", ->(x : String, y : Int32) { puts x; return 0 }},
-  {"load", ->(x : String, y : Int32) { Code.load x; return 0 }},
-  {"eval", ->(x : String, y : Int32) { eval x; return 0 }},
-  {"ceval", ->(x : String, y : Int32) { ceval x; return 0 }},
-  {"after", ->(x : String, y : Int32) { _after_(x, y); return 0 }},
-  {"+", ->(x : String, y : Int32) { plus(x, y) }},
-  {"-", ->(x : String, y : Int32) { minus(x, y) }},
-  {"inc", ->(x : String, y : Int32) { inc(x, y) }},
-  {"dec", ->(x : String, y : Int32) { dec(x, y) }},
-  {"<", ->(x : String, y : Int32) { _lower_(x, y) }},
-  {">", ->(x : String, y : Int32) { _higher_(x, y) }},
-  {"if", ->(x : String, y : Int32) { Code._if_(x, y); return 0 }},
-  {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},
-  {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},
-  {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},
-  {"let", ->(x : String, y : Int32) { let(x,y); return 0 }},
-  {"delete", ->(x : String, y : Int32) { delete x; return 0 }},
-  {"clear", ->(x : String, y : Int32) { clear x; return 0 }},
-  {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},
-  {"!", ->(x : String, y : Int32) { system(x); return 0 }},
-  {"now", ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return 0 }},
-  {"date", ->(x : String, y : Int32) { puts Time.local.to_s("%Y-%m-%d"); return 0 }},
-  {"help", ->(x : String, y : Int32) { help(x); return 0 }},
-  {"debug", ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now: ", VARS["debug"]; return 0 }},
-  {"singlestep", ->(x : String, y : Int32) { VARS["singlestep"] = !VARS["singlestep"]; puts "singlestep is now: ", VARS["singlestep"]; return 0 }},
-  {"test", ->(x : String, y : Int32) { procloop; return 0 }},
-  {"sleep",->(x : String, y : Int32) { sleep(x.to_i); return 0 }},
-  {"pass", ->(x : String, y : Int32) { pass; return 0 }},
-  {"end", ->(x : String, y : Int32) { Code._end_; return 0 }},
-  {"cls", ->(x : String, y : Int32) { print "\33c\e[3J"; return 0 }},
-  {"exit", ->(x : String, y : Int32) { exit(0) }},
-]
+KWS = {
+  "typeof" => ->(x : String, y : Int32) { _typeof_(x,y); return "",0 }, 
+  "print" => ->(x : String, y : Int32) { puts x; return "",0 },
+  "load" => ->(x : String, y : Int32) { Code.load x; return "",0 },
+  "eval" => ->(x : String, y : Int32) { eval x; return "",0 },
+  "ceval" => ->(x : String, y : Int32) { ceval x; return "",0 },
+  "after" => ->(x : String, y : Int32) { _after_(x, y); return "",0 },
+  "+" => ->(x : String, y : Int32) { r = plus(x, y); return "",r },
+  "-" => ->(x : String, y : Int32) { r = minus(x, y); return "",r },
+  "inc" => ->(x : String, y : Int32) { r = inc(x, y); return "",r },
+  "dec"=> ->(x : String, y : Int32) { r = dec(x, y); return "",r },
+  "<" => ->(x : String, y : Int32) { r = _lower_(x, y); return "",r },
+  ">" => ->(x : String, y : Int32) { r =_higher_(x, y); return "",r },
+  "if" => ->(x : String, y : Int32) { r = Code._if_(x, y); return "",r },
+  "while" => ->(x : String, y : Int32) { r = Code._while_(x, y); return "",r },
+  "every" => ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return "",0 },
+  "ls" => ->(x : String, y : Int32) { ls(x,y); return "",0 },
+  "let" => ->(x : String, y : Int32) { let(x,y); return "",0 },
+  "delete" => ->(x : String, y : Int32) { delete x; return "",0 },
+  "clear" => ->(x : String, y : Int32) { clear x; return "",0 },
+  "p" => ->(x : String, y : Int32) { _p_ x; return "",0 },
+  "!" => ->(x : String, y : Int32) { system(x); return "",0 },
+  "now" => ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return "",0 },
+  "date" => ->(x : String, y : Int32) { puts Time.local.to_s("%Y-%m-%d"); return "",0 },
+  "help" => ->(x : String, y : Int32) { help(x); return "",0 },
+  "debug" => ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now: ", VARS["debug"]; return "",0 },
+  "singlestep" => ->(x : String, y : Int32) { VARS["singlestep"] = !VARS["singlestep"]; puts "singlestep is now: ", VARS["singlestep"]; return "",0 },
+  "test" => ->(x : String, y : Int32) { procloop; return "",0 },
+  "sleep" => ->(x : String, y : Int32) { sleep(x.to_i); return "",0 },
+  "pass" => ->(x : String, y : Int32) { pass; return "",0 },
+  "end" => ->(x : String, y : Int32) { Code._end_; return "",0 },
+  "cls" => ->(x : String, y : Int32) { print "\33c\e[3J"; return "",0 },
+  "exit" => ->(x : String, y : Int32) { exit(0); return "",0 },
+  "run" =>  ->(x : String, y : Int32) { Code.run (x); return "",0 },
+  "split_run" => ->(x : String, y : Int32) { Code.split_run; return "",0 },
+  "list" => ->(x : String, y : Int32) { Code.list; return "",0 },
+}
 
-#register Code evaluater functions and procs
-Code.register
 if ARGV.size == 1        # run file non interactive
   file = ARGV[0]         # get the filename
   eval("load #{file}")
@@ -105,7 +106,7 @@ def ls ( x : String, y : Int32)
   if ((y == 1 && x == "functions") || (y == 0))
     print "functions: "
     startflag=true
-    Code.kwh.each { |d|
+    KWS.each { |d|
      #puts d     #  {"run", #<Proc(String, Int32, Int32):0x55a87122fcf0>}
      print "," if !startflag
      puts_filtered d
@@ -226,8 +227,8 @@ def eval(line)
     print "Word: ",word,"\n" if VARS["debug"]
     print "Rol: ",rol,"\n" if VARS["debug"]
 
-    if Code.kwh.try &.has_key?(word)
-      Code.kwh.not_nil![word].call(rol, ary.size) #lookup and call functions
+    if KWS.try &.has_key?(word)
+      KWS.not_nil![word].call(rol, ary.size) #lookup and call functions
     else 
       res = lookup_vars(word)
       print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
@@ -278,15 +279,14 @@ def eval2(line)
     print "Word: ",word,"\n" if VARS["debug"]
     print "Rol: ",rol,"\n" if VARS["debug"]
 
-    if Code.kwh.try &.has_key?(word)
-      Code.kwh.not_nil![word].call(rol, ary.size)
+    if KWS.try &.has_key?(word)
+      KWS.not_nil![word].call(rol, ary.size)
     else
       res = lookup_vars(word)
       print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
     end
   end
 end
-
 
 def check_equal(line : String)
     pos = line.index("==")
@@ -299,10 +299,6 @@ def check_equal(line : String)
     #p! line,pos,res if VARS["debug"]
     return res  
 end
-
-    
-
-
 
 #eval a line by  
 #passing the line to the crystal binary 
@@ -361,26 +357,25 @@ def full_split(line)
   return ary
 end
 
+
 #code()=
 #load,run,list code
 #loop fuction: while, end 
-#register and merge procs
-#into a central hash 
-#named kwh - Keyword hash  
 module Code
-  class_property kwh = Hash(String, Proc(String, Int32, Int32)).new
   class_property codelines = [] of String
   class_property lines = 0
   class_property current_line = 0
   class_property last_line = 0
   class_property vars_int32 = { } of String => Int32 
   class_property vars_string = { } of String => String
+  class_property vars = { } of String => (String | Int32) 
   class_property jmp_trigger = -1
   class_property start_line = -1
   class_property in_while = false
   class_property skip_lines = false
   extend self
-  
+ 
+
   #load code into the
   #String array  
   def load(filename)
@@ -503,30 +498,6 @@ module Code
       puts @@codelines[@@current_line] 
       @@current_line += 1
     end  
-  end
-
-  #merge the keyword hash 
-  def kws
-    kws = {
-      "run"  => ->(x : String, y : Int32) { run x; return 0 },
-      "split_run"  => ->(x : String, y : Int32) { split_run; return 0 },
-      "list" => ->(x : String, y : Int32) { list; return 0 },
-    }
-    index = 0
-    while (index < KEYWORDS.size)
-      kw = KEYWORDS.[index][0]
-      proc = KEYWORDS.[index][1]
-      # print kw ," ", KEYWORDS.[index][1],"\n"
-      kws = kws.merge({kw => proc})
-      index += 1
-      # print kws[ "#{ kw }" ],"\n"
-    end
-    return kws
-  end
-
-  #register functions 
-  def register
-    @@kwh = Code.kws
   end
   
   #while()=
@@ -772,12 +743,12 @@ def let(x : String,y : Int32)
 
    
    if t == "proc"
-    if Code.kwh.try &.has_key?(word)
+    if KWS.try &.has_key?(word)
       y1 = y - 3 # we cant use y here, because it is already used !!!
                  # we call a proc inside a proc and share the same set of vars !!! 
       istate = VARS["interactive"] 
       VARS["interactive"] = false    
-      Code.kwh.not_nil![word].call(value, y1) #lookup and call functions
+      KWS.not_nil![word].call(value, y1) #lookup and call functions
       VARS["interactive"] = istate
     #check result of call
     s = word + ".result" # function result string
@@ -986,7 +957,7 @@ def _typeof_(x : String, y : Int32)
     res = "string"
   elsif x.to_i?
     res = "int32"
-  elsif Code.kwh.try &.has_key?(x)
+  elsif KWS.has_key?(x)
     res = "proc" 
   elsif Code.vars_string.has_key?(x)
     res = "var-string"
