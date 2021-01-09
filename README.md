@@ -168,8 +168,8 @@ stop = 1       # stop all started timers
 functions can set a public var with the last result on exit:       
 some_function.result = result  
 
-res = ""                   #init a var   
-res = typeof \<var\>  #get type of a value  
+foo = ""  init a var   
+res = typeof \<var\>  #get type of a var  
                               
 **Add your own functions:**    
 -Edit tree.cr and add your favorite functions    
