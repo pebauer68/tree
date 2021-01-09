@@ -169,7 +169,8 @@ functions can set a public var with the last result on exit:
 some_function.result = result  
 
 foo = ""  init a var   
-res = typeof \<var\>  #get type of a var  
+res = typeof \<foo\>  #get type of a var  
+\>var-string  
                               
 **Add your own functions:**    
 -Edit tree.cr and add your favorite functions    
