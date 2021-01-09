@@ -33,9 +33,9 @@ https://github.com/pebauer68/tree.git
 **./tree # run tree interactive**  
 ./tree filename # run a script file with plain text  
 
-**concept and syntax**
+**Concept and syntax**  
 The syntax is borrowed from crystal and ruby.  
-Words in a line of code and operators are seperated or splitted  
+Words in a line of code and operators are seperated(splitted)    
 by blank when you load the file into the scripter.  
 
 Currently there are no parentheses supported.   
@@ -71,20 +71,20 @@ if you enter a var name and press return the var value will be shown.
 if you enter a function name it will be called.  
 
 **Set,clear,delete vars:**  
-counter = 5    # type Int32 is used
-name = "foo"   # type String is used
+counter = 5    # type Int32 is used  
+name = "foo"   # type String is used  
 counter+ = 2  
 dynamic typing:  
 counter = "7"  # set counter var to String "7" is possible  
-               # the type of a var it infered from the last assignment
-               # 
+               # the type of a var it infered from the last assignment  
+               #   
 counter = "some_string"  
-counter+ = 1   # example for a type mismatch Int32 vs String
+counter+ = 1   # example for a type mismatch Int32 vs String  
 Error in: counter+=1  
-Missing hash key: "counter"  # add function searches for int var named counter    
+Missing hash key: "counter"  # add function searches for int var named counter     
 
-clear            #clear all user vars    
-delete var name  #delete a user var
+clear            #clear all user vars      
+delete var name  #delete a user var  
 
 **True and false vs 0,1**  
 Functions return 0 on false, and 1 on true !  
@@ -121,9 +121,9 @@ p var name
 \# the var p.result is set to varname for later use     
 print "hello"   
 
-**Loops:**
-curently while is supported by the scripter 
-have a look at after and every for scheduling functions  
+**Loops:**  
+While is supported by the scripter, have a look at after and every    
+for scheduling functions  
 TODO: nested loops  
 
     while counter < 100000  
@@ -157,10 +157,10 @@ after 5 exit   # call exit in 5 seconds
 every 5 now    # Set timers to run function every 5 seconds    
                # here we just print the time   
 every 5 p a    # print value of var a to stdout every 5 seconds          
-stop = 1       # stop all started timers 
+stop = 1       # stop all started timers  
 
 functions can set a public var with the last result on exit:       
-some_function.result = result 
+some_function.result = result  
 
 res = ""                   #init a var   
 res = typeof("some text")  #get type of a value  
