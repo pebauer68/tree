@@ -123,8 +123,8 @@ I you want to see the result turn on debug.
 
 
 **Print Strings, vars:**  
-p var name 
-\# the var p.result is set to varname for later use     
+p \<var\>    
+\# the var p.result is set to var name for later use       
 print "hello"   
 
 **Loops:**  
