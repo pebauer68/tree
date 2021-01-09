@@ -76,8 +76,9 @@ name = "foo"   # type String is used
 counter+ = 2  
 dynamic typing:  
 counter = "7"  # set counter var to String "7" is possible  
-               # the type of a var it infered from the last assignment  
-               #   
+
+>The type of a var it infered from the last assignment    
+ 
 counter = "some_string"  
 counter+ = 1   # example for a type mismatch Int32 vs String  
 Error in: counter+=1  
