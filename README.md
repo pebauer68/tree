@@ -44,6 +44,12 @@ functions of tree.cr. Operators can be added by writing additional wrappers
 around the crystal standard lib. Only one command is allowed per line.
 Semicolon is not supported !  
 
+
+**Supported types for scripting**  
+int32,string,proc,var-string,var-int32  
+
+var-* types are a sort of pointer to a public var in a hash       
+
 **Basic operators and their function name**  
 
 \+    plus()    
@@ -168,9 +174,8 @@ res = typeof("some text")  #get type of a value
                               
 **Add your own functions:**    
 -Edit tree.cr and add your favorite functions    
-There is a hash with procs(function pointers) loaded at startup from tree,       
-and a register function for adding functions later, which are  
-merged into this hash of procs.  
+There is a hash with procs(function pointers) loaded at startup from tree.         
+
 You need to follow the calling convention used in this  
 proc hash, otherwise you get compile errors.  
 
@@ -178,39 +183,13 @@ If you need a different calling convention you can create
 your own proc hash table, but this might create some overhead.  
 
 Current calling convention:  
-function (String,Int32) Int32  # every function must return an int 
+function (String,Int32) String,Int32  
 
-Current function table in tree.cr:  
-KEYWORDS =  # list grows during runtime, when procs are added(via register function)  
-    {"print", ->(x : String, y : Int32) { puts x; return 0 }},  
-    {"load", ->(x : String, y : Int32) { Code.load x; return 0 }},  
-    {"eval", ->(x : String, y : Int32) { eval x; return 0 }},  
-    {"ceval", ->(x : String, y : Int32) { ceval x; return 0 }},  
-    {"after", ->(x : String, y : Int32) { _after_(x, y); return 0 }},  
-    {"+", ->(x : String, y : Int32) { plus(x, y) }},  
-    {"-", ->(x : String, y : Int32) { minus(x, y) }},  
-    {"inc", ->(x : String, y : Int32) { inc(x, y) }},  
-    {"dec", ->(x : String, y : Int32) { dec(x, y) }},  
-    {"<", ->(x : String, y : Int32) { lower(x, y) }},  
-    {">", ->(x : String, y : Int32) { _higher_(x, y) }},
-    {"if", ->(x : String, y : Int32) { Code._if_(x, y); return 0 }},
-    {"while", ->(x : String, y : Int32) { Code._while_(x, y); return 0 }},  
-    {"every", ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return 0 }},  
-    {"ls", ->(x : String, y : Int32) { ls(x,y); return 0 }},  
-    {"let", ->(x : String, y : Int32) { let x; return 0 }}, 
-    {"delete", ->(x : String, y : Int32) { delete x; return 0 }}, 
-    {"clear", ->(x : String, y : Int32) { clear x; return 0 }},  
-    {"p", ->(x : String, y : Int32) { _p_ x; return 0 }},  
-    {"!", ->(x : String, y : Int32) { system(x); return 0 }},  
-    {"now", ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return 0 }},  
-    {"help", ->(x : String, y : Int32) { help(x); return 0 }},  
-    {"debug", ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now:",VARS["debug"]; return 0 }},  
-    {"test", ->(x : String, y : Int32) { procloop; return 0 }},  
-    {"sleep",->(x : String, y : Int32) { sleep(x.to_i); return 0 }},  
-    {"pass", ->(x : String, y : Int32) { pass; return 0 }},  
-    {"end", ->(x : String, y : Int32) { Code._end_; return 0 }},  
-    {"cls", ->(x : String, y : Int32) { print "\33c\e[3J"; return 0 }},  
-    {"exit", ->(x : String, y : Int32) { exit(0) }},  
+>every function must return values on exit  
+
+Current functions:   
+functions: typeof,print,eval,ceval,after,+,-,inc,dec,<,>,if,while,every,ls,let,delete,clear,p,!,now,date,help,debug,  
+singlestep,test,sleep,pass,end,cls,exit,load,run,split_run,list
 
 
 **Load,run,list,debug,singlestep a script:**    
