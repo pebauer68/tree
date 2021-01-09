@@ -55,8 +55,8 @@ var-* types are a sort of pointer to a public var in a hash
 \+    plus()    
 \-    minus()  
 =    let() assign int or string to var or one var to another var    
-==   if()  equal for numbers, TODO: equal for strings
-<    lower()  
+==   if()  equal for numbers, TODO: equal for strings  
+<    lower()   
 \>    higher()  
 
 
@@ -188,8 +188,10 @@ function (String,Int32) String,Int32
 >every function must return values on exit  
 
 Current functions:   
-functions: typeof,print,eval,ceval,after,+,-,inc,dec,<,>,if,while,every,ls,let,delete,clear,p,!,now,date,help,debug,  
-singlestep,test,sleep,pass,end,cls,exit,load,run,split_run,list
+functions:  
+typeof,print,eval,ceval,after+,-,inc,dec,<,>,if,while,every,ls,let,delete,clear,  
+p,!,now,date,help,debug,singlestep,test,sleep,pass,end,cls,exit,load,run,  
+split_run,list  
 
 
 **Load,run,list,debug,singlestep a script:**    
