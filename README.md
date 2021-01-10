@@ -201,12 +201,13 @@ split_run,list
 
 
 **Load,run,list,debug,singlestep a script:**    
-load filename # any comments and not needed blanks are removed from scripting code  
-run           # run the loaded file  
-run s         # single step by pressing return    
-singlestep    # toggle single stepping of functions on/off  
-debug         # Toggle debug output on/off    
-list          # list the loaded script   
+
+    load filename   any comments and not needed blanks are removed from scripting code  
+    run             run the loaded file  
+    run s           single step by pressing return    
+    singlestep      toggle single stepping of functions on/off  
+    debug           Toggle debug output on/off    
+    list            list the loaded script   
 
 >Any function can be called during single stepping and vars can be checked
 by just entering their name.  
