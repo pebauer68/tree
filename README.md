@@ -7,7 +7,7 @@ tree is a dynamic testing environment for crystal functions
 It offers a CLI based REPL for interactive use.
 It is fast(see performance) and scriptable. 
 Debugging on function level offers single stepping.   
-For debugging of single commands icr or crystal play should be used.    
+For debugging of single crystal expressions icr or crystal play should be used.    
 Vars and functions are stored in hashes with public access  
 via the CLI and your scripts.  
 
@@ -37,11 +37,15 @@ https://github.com/pebauer68/tree.git
 The syntax is borrowed from crystal and ruby.  
 Words in a line of code and operators are seperated(splitted)    
 by blank when you load the file into the scripter.  
+Comments are also removed, and some expressions like "==" are replaced
+by "eq" and reparsed into lines with tokens. The program itself stays
+readable with crystal/ruby like syntax in spite of this parsing.
+
 
 Currently there are no parentheses supported.   
 Operators can be added by writing additional wrappers  
-around the crystal standard lib. Only one command is allowed per line.  
-Semicolon is not supported !  
+around the crystal standard lib. Only one statement is allowed per line.  
+Semicolon is not supported.
 
 
 **Supported types for scripting**  
@@ -51,12 +55,14 @@ var-* types are a sort of pointer to a public var in a hash
 
 **Basic operators and their function name**  
 
-\+    plus()    
-\-    minus()  
-=    let() assign int or string to var or one var to another var    
-==   if()  equal for numbers, TODO: equal for strings  
-<    lower()   
-\>    higher()  
+\+   &ensp; plus()    
+\-   &ensp; minus()  
+\*   &ensp; mul()
+\    &ensp;div() 
+=    &ensp;let() assign int or string to var or one var to another var    
+==   &ensp;if()  equal for numbers, TODO: equal for strings  
+<    &ensp;lower()   
+\>   &ensp; higher()  
 
 
 **List vars, functions:**       
@@ -97,7 +103,7 @@ Functions return 0 on false, and 1 on true !
 There is no boolean type in the scripting environment.  
 However the word "true" can be used for "while true"   
 
-In the scipting environment:  
+In the scripting environment:  
 0     #false  
 1     #true  
 ""    #empty strings are false  
