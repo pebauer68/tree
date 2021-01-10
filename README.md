@@ -228,7 +228,7 @@ https://github.com/crystal-community/icr
 
 
 **Execute functions like they were typed in:**  
-eval help  
+eval \<statement\>  
 
 **Eval via the crystal binary:**  
 Expression is compiled and then executed.  
