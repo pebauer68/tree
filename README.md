@@ -108,7 +108,7 @@ In the scripting environment:
 1     #true  
 ""    #empty strings are false  
 "a"   #any string with a value is true  
-var   #any var with a value > 0 or a string with size >1 is true  
+var   #any var with a value > 0 or a string with size >0 is true  
 
 The if operator can be used for true/false checks.  
 I you want to see the result turn on debug.  
