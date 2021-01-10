@@ -56,3 +56,10 @@ def inside_quotes?(char,line,pos)
       qpos = qpos2
      end
 end     
+
+def unquote(x : String)
+  if (x[0] == '"' && x[-1] == '"') #quotes ?
+    x=x.gsub('"',"")  # remove ""
+   end 
+return x  
+end  

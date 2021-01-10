@@ -1,55 +1,22 @@
 #require "readline"         #its better to use the rlwrap readline wrapper 
                             #from the shell: #rlwrap ./tree 
-require "./quoted.cr"
+require "./quoted.cr"       #handling chars in quotes
+require "./kws.cr"          #keywords proc hash table
+require "./tree_help.cr"    #help function
+
 VARS = {
   "started"  => true,       #used in prompt()
   "debug"    => false,      #toggle debug message output by entering debug
   "singlestep" => false,    #toggle singlestepping for functions
   "filename" => "",         #currrent file loaded
   "lines"    => 0,          #number of lines 
-  "interactive" => true,    #more output in anteraktive mode than in run mode
+  "interactive" => true,    #more output in interaktive mode than in run mode
                             #but we do not write to stdout in an asignment e.g. a=now()
 }
 
-CONTEXTS = [] of String     #block contexts like "in_while","in_if" are added at runtime
-
-KWS = {
-  "typeof" => ->(x : String, y : Int32) { _typeof_(x,y); return "",0 }, 
-  "print" => ->(x : String, y : Int32) { puts x; return "",0 },
-  "load" => ->(x : String, y : Int32) { Code.load x; return "",0 },
-  "eval" => ->(x : String, y : Int32) { eval x; return "",0 },
-  "ceval" => ->(x : String, y : Int32) { ceval x; return "",0 },
-  "after" => ->(x : String, y : Int32) { _after_(x, y); return "",0 },
-  "+" => ->(x : String, y : Int32) { r = plus(x, y); return "",r },
-  "-" => ->(x : String, y : Int32) { r = minus(x, y); return "",r },
-  "inc" => ->(x : String, y : Int32) { r = inc(x, y); return "",r },
-  "dec"=> ->(x : String, y : Int32) { r = dec(x, y); return "",r },
-  "<" => ->(x : String, y : Int32) { r = _lower_(x, y); return "",r },
-  ">" => ->(x : String, y : Int32) { r =_higher_(x, y); return "",r },
-  "if" => ->(x : String, y : Int32) { r = Code._if_(x, y); return "",r },
-  "while" => ->(x : String, y : Int32) { r = Code._while_(x, y); return "",r },
-  "every" => ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return "",0 },
-  "ls" => ->(x : String, y : Int32) { ls(x,y); return "",0 },
-  "let" => ->(x : String, y : Int32) { let(x,y); return "",0 },
-  "delete" => ->(x : String, y : Int32) { delete x; return "",0 },
-  "clear" => ->(x : String, y : Int32) { clear x; return "",0 },
-  "p" => ->(x : String, y : Int32) { _p_ x; return "",0 },
-  "!" => ->(x : String, y : Int32) { system(x); return "",0 },
-  "now" => ->(x : String, y : Int32) { puts Time.local.to_s("%H:%M:%S.%6N"); return "",0 },
-  "date" => ->(x : String, y : Int32) { puts Time.local.to_s("%Y-%m-%d"); return "",0 },
-  "help" => ->(x : String, y : Int32) { help(x); return "",0 },
-  "debug" => ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; puts "debug is now: ", VARS["debug"]; return "",0 },
-  "singlestep" => ->(x : String, y : Int32) { VARS["singlestep"] = !VARS["singlestep"]; puts "singlestep is now: ", VARS["singlestep"]; return "",0 },
-  "test" => ->(x : String, y : Int32) { procloop; return "",0 },
-  "sleep" => ->(x : String, y : Int32) { sleep(x.to_i); return "",0 },
-  "pass" => ->(x : String, y : Int32) { pass; return "",0 },
-  "end" => ->(x : String, y : Int32) { Code._end_; return "",0 },
-  "cls" => ->(x : String, y : Int32) { print "\33c\e[3J"; return "",0 },
-  "exit" => ->(x : String, y : Int32) { exit(0); return "",0 },
-  "run" =>  ->(x : String, y : Int32) { Code.run (x); return "",0 },
-  "split_run" => ->(x : String, y : Int32) { Code.split_run; return "",0 },
-  "list" => ->(x : String, y : Int32) { Code.list; return "",0 },
-}
+STACK = [] of String        #line result stack
+OP = {"eq","=","/","*","+","-"}     #supported operators, first op has highest prio
+CONTEXTS = [] of String     #contexts like "in_while","in_if" are added at runtime
 
 if ARGV.size == 1        # run file non interactive
   file = ARGV[0]         # get the filename
@@ -71,12 +38,14 @@ def repl
   rescue ex
     print "Error in: #{line}\n", ex.message, "\n"
     if Code.current_line > 0
-      print "in File: #{VARS["filename"]} Line: #{Code.current_line}\n"
+      if VARS["interactive"] = false
+        print "in File: #{VARS["filename"]} Line: #{Code.current_line}\n"
+      end
+    end  
       ex.backtrace.each { |line|
         puts line
       }
       Code.current_line = 0
-    end
   end
 end
 
@@ -109,14 +78,14 @@ def ls ( x : String, y : Int32)
     KWS.each { |d|
      #puts d     #  {"run", #<Proc(String, Int32, Int32):0x55a87122fcf0>}
      print "," if !startflag
-     puts_filtered d
+     functions_filtered d
      startflag = false 
      }
      print "\n"
   end  
 end
 
-def puts_filtered(d)
+def functions_filtered(d)
  pd = d.inspect
  eindex = pd.index('"',2) # search for closing quote
  if eindex
@@ -133,66 +102,6 @@ def read_command
   line = STDIN.gets
 end
 
-def help(*arg)  
-helptext = <<-HELP
-List vars, functions: 
->ls # list all
->ls vars
->ls functions
-
-Set,clear,delete vars:
->counter = 5 
->name = foo
->counter+ = 2
->clear           #clear all user vars
->delete varname  #delete a user var
-
-Print Strings, vars:
->p <varname> 
->print hello    
-
-Call functions:
->now            # display current time
->after 5 exit   # call exit in 5 seconds
->every 5 now    # Set timers to run <function> every 5 seconds
-                # here we just print the time
-                # stop all started timers by typing >stop = 1
-
-Load,run,list a script:
->load <filename>
->run  
->list
-Run a script from cli:
-./tree <filename>
-
-Execute shell commands by ! prefix:
->!pwd      
->!icr     #use icr(interactive crystal), exit with ^D
-           #https://github.com/crystal-community/icr
-
-Toggle debug on/off:
->debug
-
-Execute functions like they were typed in:
->eval help
-
-Eval via the crystal binary:
-Expression is compiled and then executed.
-This will take about a second per evaluation. 
->ceval 1+2
->ceval puts "aha"
-The result is stored as a string in the user var:
-ceval.result
-
-HELP
-
-puts helptext
-
-if VARS["debug"]
-    p! arg
-    p! arg.first?
-  end
-end
 
 #eval()=
 #eval (interactive mode) a line by
@@ -202,90 +111,72 @@ def eval(line)
   print "eval(): ",line,"\n" if VARS["debug"]
   word = ""
   if line && line != ""
-    ary = [] of String
     ary = full_split(line)   # needs full split which is a bit slower
     return if ary.size == 0  # check needed for lines with blanks
-    unshifted = false
-    if ary.includes?("+") # found operator in command ?
-      ary.unshift("+")
-      unshifted = true
-    end
-    if ary.includes?("-") # found operator in command ?
-      ary.unshift("-")
-      unshifted = true
-    end
-    #when all operators done we do assignment
-    if !unshifted && ary.includes?("=") # found assign = operator in command ?
-      flag = check_equal(line)
-      ary.unshift("let") if !flag
-      ary.unshift("if") if flag       # found equal operator == 
-    end
-    word = ary.shift                 # get first word
-    return if word.starts_with?("#") # skip comments
+
+    OP.each { |op|            # check for operators in line(ary)
+      if ary.includes?(op)    
+        word = op             # define trigger word for proc table
+        next
+      end
+    }  
+
+    word = ary.shift if word.size==0 # get first word
     rol = ary.join(" ")              # rest of line
 
     print "Word: ",word,"\n" if VARS["debug"]
     print "Rol: ",rol,"\n" if VARS["debug"]
 
-    if KWS.try &.has_key?(word)
-      KWS.not_nil![word].call(rol, ary.size) #lookup and call functions
+    if KWS.has_key?(word)
+      KWS[word].call(rol, ary.size) #lookup and call functions
     else 
-      res = lookup_vars(word)
+      res = lookup_vars(word)    #print value to stdout
       print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
     end
   end
 end
 
 def lookup_vars(word)
- ret = false
  if Code.vars_int32.has_key?(word)
   puts Code.vars_int32[word]
   ret = true
- end
- if Code.vars_string.has_key?(word)
+ elsif Code.vars_string.has_key?(word)
   puts Code.vars_string[word]
   ret = true 
+ else
+ return false
  end
- return ret
 end
 
 #eval (scripting mode) a line by
 #search for operators and 
 #looking up the commands in the keyword hash
 def eval2(line)
-  print "eval: ",line,"\n" if VARS["debug"]
-  word = ""
-  if line && line != ""
-    ary = [] of String
+    word = ""
     ary = line.split(" ") # here simple split is used which is faster
-    unshifted = false
-    if ary.includes?("+") # found operator in command ?
-      ary.unshift("+")
-      unshifted = true
-    end
-    if ary.includes?("-") # found operator in command ?
-      ary.unshift("-")
-      unshifted = true
-    end
-    if !unshifted && ary.includes?("=") # found operator in command ?
-        flag = check_equal(line)
-        ary.unshift("let") if !flag
-        ary.unshift("if") if flag       # found equal operator ==
-    end
-    word = ary.shift                 # get first word
-    return if word.starts_with?("#") # skip comments
-    rol = ary.join(" ")              # rest of line
 
-    print "Word: ",word,"\n" if VARS["debug"]
-    print "Rol: ",rol,"\n" if VARS["debug"]
+    OP.each { |op|            # check for operators in ary 
+    if ary.includes?(op)    
+      word = op
+      next
+    end
+  }  
 
-    if KWS.try &.has_key?(word)
-      KWS.not_nil![word].call(rol, ary.size)
+    word = ary.shift if word.size==0    # get first word
+    rol = ary.join(" ")                 # rest of line
+
+    if VARS["debug"]
+      print "eval2(): ",line,"\n" 
+      print "Word: ",word,"\n" 
+      print "Rol: ",rol,"\n"
+    end   
+
+    if KWS.has_key?(word)
+      KWS[word].call(rol, ary.size)
     else
-      res = lookup_vars(word)
-      print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
+      #res = lookup_vars(word)  # not in scrpting mode
+      print "Function or var: ",'"',"#{word}",'"'," not found\n"
     end
-  end
 end
 
 def check_equal(line : String)
@@ -330,8 +221,10 @@ def run_cmd(cmd, args)
 end
 
 #full_split()=
+#is only run once per line eval or a fresh loadad file !
 #split line into words by blank
 #seperate operators from var names
+#returns an array of strings  ["a","=","1"]
 def full_split(line)
   puts "Line in: ", line if VARS["debug"]
   ary = [] of String
@@ -344,13 +237,21 @@ def full_split(line)
     return ["ceval",line.lchop("ceval ")]
   end
 
-  #pre - split operators - is only run once per line eval or a loadad file !
-  to_split = "<>=+-"
+  #pre - split operators 
+  to_split = "<>=+-/*"
   to_split.each_char { |char|
     line = split_operator_from_var(line,char)
   }
- 
+  ind = line.index("=  =") 
+    if ind
+     flag = inside_quotes?('"',line,ind)
+     if !flag   
+        line=line.gsub("=  =","eq")
+     end
+    end      
+
   line.split(" ", remove_empty: true) { |string|
+    break if string[0] == '#'     # remove comments
     ary << string                 # "a+=1" ->  ["a", "+", "=", "1"]
   }
   puts "Line splitted: ", ary if VARS["debug"]
@@ -362,17 +263,15 @@ end
 #load,run,list code
 #loop fuction: while, end 
 module Code
-  class_property codelines = [] of String
+  @@codelines = [] of String
   class_property lines = 0
   class_property current_line = 0
-  class_property last_line = 0
+  @@last_line = 0
   class_property vars_int32 = { } of String => Int32 
   class_property vars_string = { } of String => String
-  class_property vars = { } of String => (String | Int32) 
-  class_property jmp_trigger = -1
-  class_property start_line = -1
-  class_property in_while = false
-  class_property skip_lines = false
+  @@jmp_trigger = -1
+  @@start_line = -1
+  @@skip_lines = false
   extend self
  
 
@@ -459,6 +358,7 @@ module Code
     VARS["interactive"] = true
   end # of run code
   
+  #split_run()=
   #split codelines into tokens
   #seperate operaters from var names by blank
   #remove comment lines
@@ -512,10 +412,20 @@ module Code
       varname, cmp , value = x.split(" ")
       
        if cmp == "<" #check operator
-        result = _lower_("#{varname} #{cmp} #{value}", 3)
+        #result = _lower_("#{varname} #{cmp} #{value}", 3)
+         if (@@vars_int32[varname] < value.to_i)
+           result = 1
+         else
+           result = 0
+         end  
        elsif
         cmp == ">"
-        result = _higher_("#{varname} #{cmp} #{value}", 3)
+        #result = _higher_("#{varname} #{cmp} #{value}", 3)
+         if (@@vars_int32[varname] < value.to_i)
+           result = 1
+         else
+           result = 0
+         end  
        else
         result = 0
        end 
@@ -530,11 +440,13 @@ module Code
         end
       end
 
-      if result == 0 # loop conditions for while not met
-        print "set skip lines: true","\n" if VARS["debug"]    
+      if result == 0 # loop conditions for while not met   
         @@skip_lines = true
         @@start_line = -1
-        p! CONTEXTS if VARS["debug"]
+        if VARS["debug"]
+          print "set skip lines: true","\n" if VARS["debug"] 
+          p! CONTEXTS
+        end  
         #CONTEXTS.pop
         return
       end
@@ -543,10 +455,10 @@ module Code
   #end()=
   #implement end
   def _end_
-    p! CONTEXTS if VARS["debug"]
     context = CONTEXTS.last?
     @@jmp_trigger = @@start_line  # while blocks set a start line
     if VARS["debug"]   
+      p! CONTEXTS
       print "set jmp trigger: ",@@start_line+1,"\n" 
     end  
   end
@@ -565,10 +477,20 @@ module Code
     if y == 3  # "if a < 2"
       varname, cmp , value = x.split(" ")
        if cmp == "<" #check operator
-        result = _lower_("#{varname} #{cmp} #{value}", 3)
+        #result = _lower_("#{varname} #{cmp} #{value}", 3)
+         if (@@vars_int32[varname] < value.to_i)
+           result = 1
+         else
+           result = 0
+         end  
        elsif
         cmp == ">"
-        result = _higher_("#{varname} #{cmp} #{value}", 3)
+        #result = _higher_("#{varname} #{cmp} #{value}", 3)
+         if (@@vars_int32[varname] > value.to_i)
+           result = 1
+         else
+           result = 0
+         end  
        else
         result = 0
        end 
@@ -576,10 +498,10 @@ module Code
 
 
     # lets start with numeric comparison 
-    if y == 5   # "if a = = 1" - equal operator
-      _if_, varname, cmp , cmp, value = x.split(" ")
-      #p!  _if_, varname, cmp , cmp, value
-      if Code.vars_int32[varname] == value.to_i   # equal ???
+    if y == 4   # "if a eq 1" - equal operator
+      _if_, varname, cmp, value = x.split(" ")
+      #p!  _if_, varname, cmp, value
+      if @@vars_int32[varname] == value.to_i   # equal ???
         result = 1
       else
         result = 0
@@ -602,11 +524,11 @@ module Code
           end    
         end
 
-        if Code.vars_int32.has_key?(cmp)
-          value = Code.vars_int32[cmp]
+        if @@vars_int32.has_key?(cmp)
+          value = @@vars_int32[cmp]
           res = true if value > 0
-        elsif Code.vars_string.has_key?(cmp.gsub('"',""))
-          value = Code.vars_string[cmp]
+        elsif @@vars_string.has_key?(cmp.gsub('"',""))
+          value = @@vars_string[cmp]
           res = true if value.size >= 1  # string length
           else
           res = true if cmp.size > 2 # a string on its own is true when longer ""
@@ -629,7 +551,22 @@ module Code
       end
   end
   #end of if
-end   
+ 
+
+# lower "<" operator
+def _lower_(x : String, y : Int32)
+  # counter < 10
+  p! "lower()",x,y if VARS["debug"]
+  varname, operand, val = x.split(" ")
+  value = val.to_i
+  if @@vars_int32[varname] < value
+    return 1
+  else
+    return 0
+  end
+end
+
+end  
 #end of Code module
 
 
@@ -738,7 +675,7 @@ def let(x : String,y : Int32)
    
    istate = VARS["interactive"] 
    VARS["interactive"] = false   #we dont want to see output of typeof
-   t = _typeof_(word,1) #is it a proc ?
+   t,v = _typeof_(word,1) #is it a proc ?
    VARS["interactive"] = istate
 
    
@@ -807,10 +744,10 @@ def check_if_var(x : String)
   value = '"' + Code.vars_string[x] + '"'
   return value
  end
- fn ="check_if_var"
+ #fn ="check_if_var"
  #most of the time check_if_var should be silent
  #print fn + " ():" +" var " + '"' + x + '"' + " not found\n"
- return value  # return self if no key found
+ return x  # return self if no key found
 
 end
 
@@ -831,33 +768,11 @@ end
 #print var value to stdout
 #var value is stored in var: p.result 
 def _p_(x : String)
-  if Code.vars_int32.has_key?(x)
-    result=Code.vars_int32[x].to_i
-    p result
-    let("p.result = #{result}",3)  
-  else if Code.vars_string.has_key?(x)
-    result = Code.vars_string[x]
-    p result
-    let("p.result = #{result}",3)
-  else
-    fn = "_p_"
-    puts fn + "(): " + "var not found" 
-  end
- end
+  value = check_if_var(x)
+  let("p.result = #{value}",3)
+  puts value 
 end
 
-# lower "<" operator
-def _lower_(x : String, y : Int32)
-  # counter < 10
-  p! "lower()",x,y if VARS["debug"]
-  varname, operand, val = x.split(" ")
-  value = val.to_i
-  if Code.vars_int32[varname] < value
-    return 1
-  else
-    return 0
-  end
-end
 
 # higher ">" operator
 def _higher_(x : String, y : Int32)
@@ -874,10 +789,24 @@ end
 
 # add value to a var
 # example:  counter+= 3
-# splitted: counter + = 3
-# a = b + 1 works
+# "counter + = 3" # 4 token
+# "a = b + 1" works # 5 token
+# "fun() x + y" # 4 token
 def plus(x : String, y : Int32)
   p! "plus()",x,y if VARS["debug"]
+
+  if y==3 # "a+b" in interaktive mode
+     x = "print " + x 
+     y=4
+  end
+
+  if y==4 && !(x.includes?("="))  # fun() x + y 
+     lside = x.split[0]
+     rside = x.split[1..].join(" ")
+     x = lside + " = " + rside
+     y=5
+  end
+
   if y == 5 # countera = counterb + 1
      lside, rside = x.split(" = ",remove_empty: true)
      p! rside, lside if VARS["debug"]
@@ -890,21 +819,27 @@ def plus(x : String, y : Int32)
       y = 4
      else  # numeric int only !
       #rside_res = rside_s[0].to_i + rside_s[3].to_i
-      rside_res = (value = check_if_var(rside_s[0])).not_nil!.to_i + rside_s[3].to_i
-      Code.vars_int32[lside] = rside_res
+      rside_res = (value = check_if_var(rside_s[0])).to_i + (val2 = check_if_var(rside_s[3])).to_i
+      if KWS.has_key?(lside)                # do we have a function on left side ?
+        KWS[lside].call(rside_res.to_s,1)   # give result as string
+        return 0
+      end  
+      Code.vars_int32[lside] = rside_res    # store result in var
       p! rside_res if VARS["debug"]
       return 0
      end
      p! rside_s,rside_j,rside_res if VARS["debug"]
      #return 0
   end 
-  if y == 4
+  if y == 4 # counter + = 3  
     varname = x.split(" ")[0]
     value = x.split(" ")[3].to_i
-    Code.vars_int32[varname] += value
+    if Code.vars_int32.has_key?(varname)
+      Code.vars_int32[varname] += value
+    end  
   else
-    puts "Method plus failed, check arguments"
-    puts "got: ", x,y
+    fn = "plus"
+    method_err(fn,x) 
   end
   return 0
 end
@@ -919,56 +854,101 @@ def minus(x : String, y : Int32)
     value = x.split(" ")[3].to_i
     Code.vars_int32[varname] -= value
   else
-    puts "Method minus needs at least 4 arguments"
-    puts "got: ", x
+    fn = "minus"
+    method_err(fn,x) 
+  return 0
+  end
+end
+
+#method_err(name,input string)
+def method_err(fn,x)
+  puts "Method #{fn}\(\) failed, check arguments"
+  puts "got: ", x
+end
+
+
+# mul value from a var
+# example:  val*= 3
+# splitted: val * = 3
+def mul(x : String, y : Int32)
+  p! x if VARS["debug"] 
+  if y == 4
+    varname = x.split(" ")[0]
+    value = x.split(" ")[3].to_i
+    Code.vars_int32[varname] *= value
+  else
+    fn = "mul"
+    method_err(fn,x) 
   end
   return 0
 end
 
+# div value from a var
+# example:  val/= 3
+# splitted: val / = 3
+def div(x : String, y : Int32)
+  p! x if VARS["debug"] 
+  if y == 4
+    varname = x.split(" ")[0]
+    value = x.split(" ")[3].to_i
+    p! varname,value
+    Code.vars_int32[varname] = (Code.vars_int32[varname] / value).to_i 
+  else
+    fn = "div"
+    method_err(fn,x)
+  end
+  return 0
+end
 
 # increment var value 
 def inc(x : String, y : Int32)
-  if y == 1
-    varname = x.split(" ")[0]
-    Code.vars_int32[varname] += 1
+  if y == 1 
+    Code.vars_int32[x] += 1 #no split needed
   else
-    puts "Method inc needs 1 argument"
-    puts "got: ", x
+    fn = "inc"
+    method_err(fn,x) 
   end
-  return 0
+  return "",0
 end
 
 # decrement var value 
 def dec(x : String, y : Int32)
   if y == 1
-    varname = x.split(" ")[0]
-    Code.vars_int32[varname] -= 1
+    Code.vars_int32[x] -= 1 #no split needed
   else
-    puts "Method dec needs 1 argument"
-    puts "got: ", x
+    fn = "dec"
+    method_err(fn,x) 
   end
-  return 0
+  return "",0
 end
 
+#typeof()=
 def _typeof_(x : String, y : Int32)
   print "typeof() got: ",x,"\n"  if VARS["debug"]
-  return if y != 1   # check number of args
+  res,v = "",0
+  return res,v if y != 1   # check number of args
   if (x[0] == '"' && x[-1] == '"')   # a (quoted) string
-    res = "string"
-  elsif x.to_i?
-    res = "int32"
+    res = "string"; v=1
+  elsif x.to_i?; 
+    res = "int32"; v=2
   elsif KWS.has_key?(x)
-    res = "proc" 
+    res = "proc" ; v=3
   elsif Code.vars_string.has_key?(x)
-    res = "var-string"
+    res = "var-string"; v=4
   elsif Code.vars_int32.has_key?(x)
-    res = "var-int32"
+    res = "var-int32"; v=5
   else 
-    res = "unknown type"
+    res = "unknown type"; v=-1
   end
   if VARS["interactive"]
-    puts res 
+    puts res
   end
   Code.vars_string = Code.vars_string.merge({"typeof.result" => res}) 
-  return res 
+  return res,v 
+end  
+
+def _puts_(x : String)
+ x=unquote(x)
+ puts x
+ return "",0
 end  
