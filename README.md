@@ -60,7 +60,7 @@ var-* types are a sort of pointer to a public var in a hash
 \*   &ensp; mul()  
 \    &ensp; div()  
 =    &ensp; let() assign int or string to var or one var to another var    
-==   &ensp; if()  equal for numbers, TODO: equal for strings  
+==  &ensp; if()  equal for numbers, TODO: equal for strings  
 <    &ensp; lower()     
 \>   &ensp; higher()   
 
