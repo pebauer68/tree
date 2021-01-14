@@ -3,6 +3,7 @@
 require "./quoted.cr"       #handling chars in quotes
 require "./kws.cr"          #keywords proc hash table
 require "./tree_help.cr"    #help function
+require "./tree_math.cr"    #simple int math
 
 VARS = {
   "started"  => true,       #used in prompt()
@@ -95,13 +96,11 @@ def functions_filtered(d)
  return
 end
 
-
 #read line from STDIN
 def read_command
   #line = Readline.readline(prompt = ">", add_history = true)
   line = STDIN.gets
 end
-
 
 #eval()=
 #eval (interactive mode) a line by
@@ -130,22 +129,9 @@ def eval(line)
     if KWS.has_key?(word)
       KWS[word].call(rol, ary.size) #lookup and call functions
     else 
-      res = lookup_vars(word)    #print value to stdout
-      print "Function or var: ",'"',"#{word}",'"'," not found\n" if !res
+      puts check_if_var(word)       #print value to stdout
     end
   end
-end
-
-def lookup_vars(word)
- if Code.vars_int32.has_key?(word)
-  puts Code.vars_int32[word]
-  ret = true
- elsif Code.vars_string.has_key?(word)
-  puts Code.vars_string[word]
-  ret = true 
- else
- return false
- end
 end
 
 #eval (scripting mode) a line by
@@ -257,7 +243,6 @@ def full_split(line)
   puts "Line splitted: ", ary if VARS["debug"]
   return ary
 end
-
 
 #code()=
 #load,run,list code
@@ -569,7 +554,6 @@ end
 end  
 #end of Code module
 
-
 class Timer
   property name ="Test Name"
 
@@ -722,7 +706,6 @@ def let(x : String,y : Int32)
   end
 end
 
-
 #check_if_var()=
 #check if a var with that name exists
 #and return the value
@@ -744,11 +727,10 @@ def check_if_var(x : String)
   value = '"' + Code.vars_string[x] + '"'
   return value
  end
- #fn ="check_if_var"
- #most of the time check_if_var should be silent
- #print fn + " ():" +" var " + '"' + x + '"' + " not found\n"
- return x  # return self if no key found
-
+ fn = "check_if_var"
+ print fn + "():\n" if VARS["debug"]
+ print "var: " + '"' + x + '"' + " not found\n"
+ return "nil"  # return error if var not found
 end
 
 #clear all vars in the hashes
@@ -773,7 +755,6 @@ def _p_(x : String)
   puts value 
 end
 
-
 # higher ">" operator
 def _higher_(x : String, y : Int32)
   # counter > 10
@@ -787,139 +768,10 @@ def _higher_(x : String, y : Int32)
   end
 end
 
-# add value to a var
-# example:  counter+= 3
-# "counter + = 3" # 4 token
-# "a = b + 1" works # 5 token
-# "fun() x + y" # 4 token
-def plus(x : String, y : Int32)
-  p! "plus()",x,y if VARS["debug"]
-
-  if y==3 # "a+b" in interaktive mode
-     x = "print " + x 
-     y=4
-  end
-
-  if y==4 && !(x.includes?("="))  # fun() x + y 
-     lside = x.split[0]
-     rside = x.split[1..].join(" ")
-     x = lside + " = " + rside
-     y=5
-  end
-
-  if y == 5 # countera = counterb + 1
-     lside, rside = x.split(" = ",remove_empty: true)
-     p! rside, lside if VARS["debug"]
-     rside_s = rside.split(" ",remove_empty: true)
-     #if "a = a + 1"
-     rside_s.insert(2,"=")
-     rside_j = (rside_s.join(" "))
-     if lside == rside_s[0]
-      x = rside_j # rewrite "counter = counter + 1" to "counter + = 1"
-      y = 4
-     else  # numeric int only !
-      #rside_res = rside_s[0].to_i + rside_s[3].to_i
-      rside_res = (value = check_if_var(rside_s[0])).to_i + (val2 = check_if_var(rside_s[3])).to_i
-      if KWS.has_key?(lside)                # do we have a function on left side ?
-        KWS[lside].call(rside_res.to_s,1)   # give result as string
-        return 0
-      end  
-      Code.vars_int32[lside] = rside_res    # store result in var
-      p! rside_res if VARS["debug"]
-      return 0
-     end
-     p! rside_s,rside_j,rside_res if VARS["debug"]
-     #return 0
-  end 
-  if y == 4 # counter + = 3  
-    varname = x.split(" ")[0]
-    value = x.split(" ")[3].to_i
-    if Code.vars_int32.has_key?(varname)
-      Code.vars_int32[varname] += value
-    end  
-  else
-    fn = "plus"
-    method_err(fn,x) 
-  end
-  return 0
-end
-
-# subtract value from a var
-# example:  counter-= 3
-# splitted: counter - = 3
-def minus(x : String, y : Int32)
-  p! x if VARS["debug"] 
-  if y == 4
-    varname = x.split(" ")[0]
-    value = x.split(" ")[3].to_i
-    Code.vars_int32[varname] -= value
-  else
-    fn = "minus"
-    method_err(fn,x) 
-  return 0
-  end
-end
-
 #method_err(name,input string)
 def method_err(fn,x)
-  puts "Method #{fn}\(\) failed, check arguments"
-  puts "got: ", x
-end
-
-
-# mul value from a var
-# example:  val*= 3
-# splitted: val * = 3
-def mul(x : String, y : Int32)
-  p! x if VARS["debug"] 
-  if y == 4
-    varname = x.split(" ")[0]
-    value = x.split(" ")[3].to_i
-    Code.vars_int32[varname] *= value
-  else
-    fn = "mul"
-    method_err(fn,x) 
-  end
-  return 0
-end
-
-# div value from a var
-# example:  val/= 3
-# splitted: val / = 3
-def div(x : String, y : Int32)
-  p! x if VARS["debug"] 
-  if y == 4
-    varname = x.split(" ")[0]
-    value = x.split(" ")[3].to_i
-    p! varname,value
-    Code.vars_int32[varname] = (Code.vars_int32[varname] / value).to_i 
-  else
-    fn = "div"
-    method_err(fn,x)
-  end
-  return 0
-end
-
-# increment var value 
-def inc(x : String, y : Int32)
-  if y == 1 
-    Code.vars_int32[x] += 1 #no split needed
-  else
-    fn = "inc"
-    method_err(fn,x) 
-  end
-  return "",0
-end
-
-# decrement var value 
-def dec(x : String, y : Int32)
-  if y == 1
-    Code.vars_int32[x] -= 1 #no split needed
-  else
-    fn = "dec"
-    method_err(fn,x) 
-  end
-  return "",0
+  print "Method #{fn}\(\) failed, please check arguments\n"
+  print "got: ", x,"\n"
 end
 
 #typeof()=
@@ -952,3 +804,4 @@ def _puts_(x : String)
  puts x
  return "",0
 end  
+
