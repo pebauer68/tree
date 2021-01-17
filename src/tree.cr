@@ -3,7 +3,7 @@
 require "./quoted.cr"       #handling chars in quotes
 require "./kws.cr"          #keywords proc hash table
 require "./tree_help.cr"    #help function
-require "./tree_math.cr"    #simple int math
+require "./tree_math.cr"    #simple int math with 2 operands
 
 VARS = {
   "started"  => true,       #used in prompt()
@@ -15,9 +15,9 @@ VARS = {
                             #but we do not write to stdout in an asignment e.g. a=now()
 }
 
-STACK = [] of String        #line result stack
-OP = {"eq","=","/","*","+","-"}     #supported operators, first op has highest prio
+STACK = [] of Int32         #line number stack used in functions
 CONTEXTS = [] of String     #contexts like "in_while","in_if" are added at runtime
+OP = {"eq","=","/","*","+","-"}     #supported operators, first op has highest prio
 
 if ARGV.size == 1        # run file non interactive
   file = ARGV[0]         # get the filename
@@ -74,7 +74,7 @@ def ls ( x : String, y : Int32)
     print "contexts: ",CONTEXTS,"\n" if CONTEXTS.size > 0
   end
   if ((y == 1 && x == "functions") || (y == 0))
-    print "functions: "
+    print "procs: "
     startflag=true
     KWS.each { |d|
      #puts d     #  {"run", #<Proc(String, Int32, Int32):0x55a87122fcf0>}
@@ -84,6 +84,8 @@ def ls ( x : String, y : Int32)
      }
      print "\n"
   end  
+    print "functions: \n"
+    print Code.list_fun,"\n"
 end
 
 def functions_filtered(d)
@@ -128,13 +130,19 @@ def eval(line)
 
     if KWS.has_key?(word)
       KWS[word].call(rol, ary.size) #lookup and call functions
-    else 
-      puts check_if_var(word)       #print value to stdout
+    elsif
+      Code.current_line = Code.last_line + 1
+      flag = check_fun(word,rol)
+      print "back from function\n" if VARS["debug"]
+      if !flag
+        puts check_if_var(word)       #print value to stdout
+      end  
     end
   end
 end
 
-#eval (scripting mode) a line by
+
+#eval2()=  (scripting mode) a line by
 #search for operators and 
 #looking up the commands in the keyword hash
 def eval2(line)
@@ -159,9 +167,10 @@ def eval2(line)
 
     if KWS.has_key?(word)
       KWS[word].call(rol, ary.size)
-    else
+    elsif
       #res = lookup_vars(word)  # not in scrpting mode
-      print "Function or var: ",'"',"#{word}",'"'," not found\n"
+      flag = check_fun(word,rol)
+      print "Function or var: ",'"',"#{word}",'"'," not found\n" if !flag
     end
 end
 
@@ -228,6 +237,7 @@ def full_split(line)
   to_split.each_char { |char|
     line = split_operator_from_var(line,char)
   }
+  #handle assignment operator
   ind = line.index("=  =") 
     if ind
      flag = inside_quotes?('"',line,ind)
@@ -235,6 +245,18 @@ def full_split(line)
         line=line.gsub("=  =","eq")
      end
     end      
+
+  #insert blank before left parens "("
+  #needed for functions e.g. foo (args)
+        
+  ind = line.index("(")
+     if ind
+      flag = inside_quotes?('"',line,ind)
+       if !flag   
+         line=line.gsub("("," (")
+       end
+    end      
+
 
   line.split(" ", remove_empty: true) { |string|
     break if string[0] == '#'     # remove comments
@@ -251,12 +273,15 @@ module Code
   @@codelines = [] of String
   class_property lines = 0
   class_property current_line = 0
-  @@last_line = 0
+  class_property last_line = 0
   class_property vars_int32 = { } of String => Int32 
   class_property vars_string = { } of String => String
   @@jmp_trigger = -1
   @@start_line = -1
   @@skip_lines = false
+  @@functions = { } of String => Hash(String,(String|Int32))  
+  @@current_line = 0
+  @@running = false
   extend self
  
 
@@ -298,10 +323,14 @@ module Code
       VARS["singlestep"] = false
     end    
     
-    @@current_line = 0
+    if @@current_line >= @@last_line
+       return
+    end   
+    @@running = true
     @@skip_lines = false
     @@jmp_trigger = -1
     @@start_line = -1
+    CONTEXTS.push("in_main") if CONTEXTS.size==0
 
     size = @@codelines.size
     while line = @@codelines[@@current_line] 
@@ -317,10 +346,12 @@ module Code
         end  
       end
       if @@jmp_trigger != -1 # we got a number !?
-        @@current_line = @@jmp_trigger.to_i 
-        @@jmp_trigger = -1 # reset trigger
-        print "Jumping to: ",@@current_line+1," ",@@codelines[@@current_line],"\n" if VARS["debug"]
-      else
+        if CONTEXTS.last == "in_while"
+          @@current_line = @@jmp_trigger.to_i 
+          @@jmp_trigger = -1 # reset trigger
+          print "run(),Jumping to: ",@@current_line+1," ",@@codelines[@@current_line],"\n" if VARS["debug"]
+        end
+        else
         @@current_line += 1
         if VARS["singlestep"]    # wait for return key
           sread = STDIN.gets() 
@@ -338,8 +369,10 @@ module Code
       end
       break if @@current_line >= @@last_line
     end # of loop
-    print "reached end of file in line: ",@@current_line,"\n"
+    print "reached end of file in line: ",@@last_line,"\n" if VARS["debug"]
+    @@running = false
     @@current_line=0
+    CONTEXTS.clear
     VARS["interactive"] = true
   end # of run code
   
@@ -373,6 +406,7 @@ module Code
     end # of loop
     puts "code cleanup done in split_run()"
     print "Current number of lines: ",@@current_line,"\n"
+    @@current_line=0
   end # of split code
 
   #list()=
@@ -380,7 +414,7 @@ module Code
   def list
     @@current_line=0
     while @@current_line < @@last_line 
-      puts @@codelines[@@current_line] 
+      print @@current_line+1,": ",@@codelines[@@current_line],"\n" 
       @@current_line += 1
     end  
   end
@@ -429,7 +463,7 @@ module Code
         @@skip_lines = true
         @@start_line = -1
         if VARS["debug"]
-          print "set skip lines: true","\n" if VARS["debug"] 
+          print "set skip lines: true","\n" 
           p! CONTEXTS
         end  
         #CONTEXTS.pop
@@ -441,11 +475,21 @@ module Code
   #implement end
   def _end_
     context = CONTEXTS.last?
-    @@jmp_trigger = @@start_line  # while blocks set a start line
-    if VARS["debug"]   
-      p! CONTEXTS
-      print "set jmp trigger: ",@@start_line+1,"\n" 
-    end  
+    p! CONTEXTS if VARS["debug"] 
+    if context
+      if context.includes?("in_function")
+         @@current_line = STACK.pop   # jump to line after end
+         CONTEXTS.pop
+         if VARS["debug"]
+           print "Popping/Setting cul to: ",@@current_line,"\n"
+           p! CONTEXTS 
+         end  
+         return
+      end
+      if @@start_line > 0
+         @@jmp_trigger = @@start_line  # while blocks set a start line
+      end
+    end     
   end
 
   #if()=""
@@ -536,6 +580,17 @@ module Code
       end
   end
   #end of if
+
+#add_fun()=
+def add_fun(name,vars,line)
+  print "add_fun() " if VARS["debug"]
+  @@functions[name] = { "line"  => line, "sign" => vars } 
+  @@skip_lines = true
+end
+
+def list_fun()
+  return @@functions
+end  
  
 
 # lower "<" operator
@@ -553,6 +608,7 @@ end
 
 end  
 #end of Code module
+
 
 class Timer
   property name ="Test Name"
@@ -692,7 +748,18 @@ def let(x : String,y : Int32)
    end  
    if !(flag1 || value.to_i?)      # if its inside quotes or an int it is for sure no var
       value = check_if_var(value)     # lets see it the var really exists and get its value
-   end   
+   end  
+   
+   #check if we are in a function 
+   #vars needs to be stored in function context
+   if CONTEXTS.size >= 1
+    if CONTEXTS.last.includes?("in_function")
+     fu = CONTEXTS.last.split(" ")[1] #get current function name
+     Code.list_fun[fu][varname] = value
+     return 
+    end
+  end  
+
    if value 
      if value.to_i? 
        Code.vars_int32 = Code.vars_int32.merge({varname => value.to_i})
@@ -717,16 +784,31 @@ def check_if_var(x : String)
  if x.includes?(" ") #it is no valid varname, includes a blank
    return x 
  end
- 
+
+ #check vars in local context first
+ #which function is looking for a var ?
+ #p! CONTEXTS
+ #p! CONTEXTS.last.split(" ")[1]
+ if CONTEXTS.size >= 1
+   if CONTEXTS.last.includes?("in_function")
+     fu = CONTEXTS.last.split(" ")[1] #get current function name
+     if Code.list_fun[fu]["sign"].to_s.includes?(x)
+     return Code.list_fun[fu]["args"].to_s
+   end
+  end
+end      
+
  if Code.vars_int32.has_key?(x)
   value = Code.vars_int32[x]
   return value.to_s
  end
 
  if Code.vars_string.has_key?(x)
+  p! x
   value = '"' + Code.vars_string[x] + '"'
   return value
  end
+
  fn = "check_if_var"
  print fn + "():\n" if VARS["debug"]
  print "var: " + '"' + x + '"' + " not found\n"
@@ -805,3 +887,48 @@ def _puts_(x : String)
  return "",0
 end  
 
+#def()=
+#implmement functions
+def _def_(x : String, y : Int32)
+  if VARS["debug"]
+    print "def()\n"
+    print "found function definition ",x," ",y,"\n"
+    print "in Line: ",Code.current_line,"\n"
+  end
+  line = Code.current_line
+  name = x.split(" ")[0]
+  if y == 2
+    vars = x.split(" ")[1]
+    vars = vars[1..-2] # remove parens
+  else
+    vars = "args"
+  end  
+  if name && line
+    Code.add_fun(name,vars,line)
+  end 
+end  
+
+#check_fun()=
+def check_fun(word,rol)
+  print "check_fun() ",word,"\n" if VARS["debug"]
+  if Code.list_fun.has_key?(word)
+    Code.list_fun[word]["args"] = rol
+    funstart = Code.list_fun[word]["line"]
+    if VARS["debug"]
+      print "Starting function: ",word," in line ",funstart,"\n" 
+      print "Pushing line: ",Code.current_line+1,"\n"
+    end
+    STACK.push(Code.current_line)
+    CONTEXTS.push("in_function #{word} #{rol}")
+    Code.current_line = funstart.to_i
+    if VARS["interactive"]
+      p! CONTEXTS if VARS["debug"]
+      Code.current_line+=1
+      Code.run("") 
+    end  
+    return true
+   else
+    return false
+   end  
+end  
+  

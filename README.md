@@ -41,8 +41,7 @@ Comments are also removed, and some expressions like "==" are replaced
 by "eq" and reparsed into lines with tokens. The program itself stays
 readable with crystal/ruby like syntax in spite of this parsing.
 
-
-Currently there are no parentheses supported.   
+ 
 Operators can be added by writing additional wrappers  
 around the crystal standard lib. Only one statement is allowed per line.  
 Semicolon is not supported.
@@ -80,6 +79,27 @@ ls functions
 
 if you enter a var name and press return the var value will be shown.   
 if you enter a function name it will be called.  
+
+
+Interpreted functions:  
+While the above functions are implemented via crystal procs it is possible
+to write functions in the scripter which have their own namespace vor vars. 
+
+    puts "hello functions"
+
+    def hello(greeting)
+      p greeting
+    end
+
+    c=0
+    while c < 3
+      hello good morning
+      c+=1
+      p c
+    end 
+
+TODO: implement return values for interpreted functions  
+
 
 **Set,clear,delete vars:**  
 counter = 5    # type Int32 is used  
