@@ -52,7 +52,7 @@ int32,string,proc,var-string,var-int32
 
 var-* types are a sort of pointer to a public var in a hash       
 
-**Basic operators and their function name**  
+**Basic operators and their function name(in tee.cr, tree_math.cr)**  
 
 \+   &ensp; plus()    
 \-   &ensp; minus()    
