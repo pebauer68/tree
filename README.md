@@ -98,7 +98,7 @@ to write functions in the scripter which have their own namespace for vars. This
       p c
     end 
     
-    \<ls vars\>
+    <ls vars>
     functions: 
     {"hello" => {"line" => 1, "sign" => "greeting",
     "args" => "good morning", "p.result" => "good morning"}}
