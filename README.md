@@ -97,6 +97,12 @@ to write functions in the scripter which have their own namespace for vars. This
       c+=1
       p c
     end 
+    
+    \<ls vars\>
+    functions: 
+    {"hello" => {"line" => 1, "sign" => "greeting",
+    "args" => "good morning", "p.result" => "good morning"}}
+
 
 TODO: implement return values for interpreted functions  
 
