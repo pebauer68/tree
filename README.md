@@ -83,7 +83,7 @@ if you enter a function name it will be called.
 
 Interpreted functions:  
 While the above functions are implemented via crystal procs it is possible
-to write functions in the scripter which have their own namespace vor vars. 
+to write functions in the scripter which have their own namespace for vars. This namespaces can be inspected with \<ls vars\>  
 
     puts "hello functions"
 
