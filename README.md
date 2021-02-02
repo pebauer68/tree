@@ -93,7 +93,7 @@ to write functions in the scripter which have their own namespace for vars. This
 
     c=0
     while c < 3
-      hello good morning
+      hello "good morning"
       c+=1
       p c
     end 
@@ -103,8 +103,6 @@ to write functions in the scripter which have their own namespace for vars. This
     {"hello" => {"line" => 1, "sign" => "greeting",
     "args" => "good morning", "p.result" => "good morning"}}
 
-
-TODO: implement return values for interpreted functions  
 
 
 **Set,clear,delete vars:**  
@@ -154,15 +152,12 @@ I you want to see the result turn on debug.
     result of if: 1
 
 
-**Print Strings, vars:**  
-p \<var\>    
-\# the var p.result is set to vars value for later use        
-print "hello"   
+**Print Strings, vars:**         
+print,puts,p "hello" a b c   # no comma needed for now, but a blank   
 
 **Loops:**  
 While is supported by the scripter, have a look at after and every    
-for scheduling functions  
-TODO: nested loops  
+for scheduling functions   
 
     while counter < 100000  
         some_function
