@@ -58,8 +58,18 @@ def inside_quotes?(char,line,pos)
 end     
 
 def unquote(x : String)
+  if VARS["debug"]
+   puts "unquote()"
+   p! x 
+  end
+  return x,1 if x.size < 3
   if (x[0] == '"' && x[-1] == '"') #quotes ?
-    x=x.gsub('"',"")  # remove ""
-   end 
-return x  
+     x=x.gsub('"',"")   # remove ""
+     x=x.gsub('_',' ')  # underscore -> blank
+     p! x if VARS["debug"]
+     return x,0
+  else
+     puts "nothing to unquoute" if VARS["debug"]
+     return x,1 
+  end   
 end  
