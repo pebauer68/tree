@@ -1114,7 +1114,7 @@ def check_fun(word,rol)
     Code.functions[word]["args"] = rol
     funstart = Code.functions[word]["line"]
     varname_from_sign = Code.functions[word]["sign"].to_s
-    Code.functions[word][varname_from_sign] = rol
+    Code.functions[word][varname_from_sign] = replace_var(rol) # pass arguments to function by value
     if VARS["debug"]
       print "starting function: ",word," in line ",funstart.to_i+1,"\n" 
       print "pushing line: ",Code.current_line+1,"\n"
