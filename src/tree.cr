@@ -835,7 +835,7 @@ def let(x : String,y : Int32)
              when Int32
               writevar(vname,sx) 
              end      
-         index+1
+         index+=1
          }   
       return
     else 
