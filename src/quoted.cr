@@ -57,7 +57,7 @@ def inside_quotes?(char,line,pos)
      end
 end     
 
-def unquote(x : String)
+def unquote(x : String) # returns string
   if VARS["debug"]
    puts "unquote()"
    p! x 

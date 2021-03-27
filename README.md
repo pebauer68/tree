@@ -48,7 +48,8 @@ Semicolon is not supported.
 
 
 **Supported types for scripting**  
-int32,string,proc,var-string,var-int32  
+int32,float64,string,proc,var-string,var-int32  
+arrays of type int32,float64,string
 
 var-* types are a sort of pointer to a public var in a hash       
 

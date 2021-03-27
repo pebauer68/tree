@@ -20,7 +20,7 @@ KWS = {
   "eq" => ->(x : String, y : Int32) { r = Code._if_(x, y); return "",r },    #if2
   "while" => ->(x : String, y : Int32) { Code._while_(x, y); return "",0 },
   "end" => ->(x : String, y : Int32) { Code._end_; return "",0 },
-  "every" => ->(x : String, y : Int32) { t = Timer.new; t.timer_test(x,y); return "",0 },
+  "every" => ->(x : String, y : Int32) { t = Timer.new; r = t.start_timer(x,y); return "", r },
   "ls" => ->(x : String, y : Int32) { ls(x,y); return "",0 },
   "vars" => ->(x : String, y : Int32) { ls("vars",1); return "",0 },
   "let" => ->(x : String, y : Int32) { let(x,y); return "",0 },
@@ -43,4 +43,6 @@ KWS = {
   "singlestep" => ->(x : String, y : Int32) { VARS["singlestep"] = !VARS["singlestep"]; return VARS["singlestep"].to_s,0 },
   "system" => ->(x : String, y : Int32) { _system_(x); },
   "exit" => ->(x : String, y : Int32) { exit(0); return "",0 },
+  "Array" => ->(x : String, y : Int32) { _array_(x,y); return "",0 },
+  "append" =>  ->(x : String, y : Int32) { _append_(x,y); return "",0 }
 }

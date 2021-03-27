@@ -18,13 +18,14 @@ VARS = {
 STACK = [] of Int32         #line number stack used in functions
 CONTEXTS = ["in_function main"]     #contexts like "in_while","in_if" are added at runtime
 ROL=[""]                    #rest of line as String - function call args
-OP = {"eq","=","/","*","+","-"}     #supported operators, first op has highest prio
-Code.add_fun("main","args",0)       #add a namespace for main
-eval("trace=0") 
-Code.cfu="main"                     #current function is main on startup
+OP = {"eq","=","/","*","+","-","append"}  #supported operators, first op has highest prio
+Code.add_fun("main","noargs",0)       #add a namespace for main
+Code.add_fun("eval","noargs",0)       #add a namespace for eval, e.g. used by Array.new()
+Code.cfu="main"                       #current function is main on startup
+writevar("trace",0)                   #set the trace var to 0
 
-if ARGV.size == 1        # run file non interactive
-  file = ARGV[0]         # get the filename
+if ARGV.size == 1 && ARGV[0].size > 0    # check if a filename with length > 0 is passed
+  file = ARGV[0]                         # get the filename
   eval("load #{file}")
   eval2("run")
   exit
@@ -40,13 +41,12 @@ def repl
     line = read_command()
     eval(line)
   rescue ex
-    print "Error in: #{line}\n", ex.message, "\n"
-    if Code.current_line > 0
-      if VARS["interactive"] = false
-        print "in File: #{VARS["filename"]} Line: #{Code.current_line}\n"
-      end
+    if VARS["filename"].to_s.size > 1
+      print "Error in: #{line}\n", ex.message, "\n"
+      print "in File: #{VARS["filename"]} Line: #{Code.current_line+1}\n"
     end  
-      if readvar("trace").to_i == 1
+  
+      if Code.functions["main"]["trace"].as(Int32) == 1
         ex.backtrace.each { |line|
           puts line
         }
@@ -136,14 +136,29 @@ def eval(line)
     Code.rols = ary
 
     OP.each { |op|            # check for operators in line(ary)
+                              # OP = {"eq","=","/","*","+","-"}
       if ary.includes?(op)    
-        word = op             # define trigger word for proc table
+        word = op             # define trigger word for proc function table
         next
       end
     }  
 
     word = ary.shift if word.size==0 # get first word
     rol = ary.join(" ")              # rest of line
+    
+    if word.includes?(".")          # support dot naming
+      dntree = word.split(".")      # consume the first elem, parse the rest
+      word = dntree[0]              # get parent name
+      res = ""   
+      if rol.size > 0
+        res = dntree[1..].join(".")
+        rol = res + " " + rol         # "a.b.c (123)"
+      else
+        res = dntree[1..].join(".")   # "a.b.c"    
+        rol = res   
+      end     
+    end
+
     ROL[0] = rol
 
     print "Word: ",word,"\n" if VARS["debug"]
@@ -178,6 +193,15 @@ def eval2(line)
     word = ary.shift if word.size==0    # get first word
     rol = ary.join(" ")                 # rest of line
     ROL[0] = rol                        # as a string
+
+    if word.includes?(".")            # support dot naming
+      word,word2 = word.split(".") 
+      if rol.size > 0
+        rol = word2 + " " + rol       # "a.b 123"
+      else
+        rol = word2
+      end   
+    end
 
     if VARS["debug"]
       print "eval2(): ",line,"\n" 
@@ -257,12 +281,21 @@ def full_split(line)
   to_split.each_char { |char|
     line = split_operator_from_var(line,char)
   }
-  #handle assignment operator
+  #handle assignment/equal operator
   ind = line.index("=  =") 
     if ind
      flag = inside_quotes?('"',line,ind)
      if !flag   
         line=line.gsub("=  =","eq")
+     end
+    end 
+
+  #handle append < <
+  ind = line.index("<  <") 
+    if ind
+     flag = inside_quotes?('"',line,ind)
+     if !flag   
+        line=line.gsub("<  <","append")
      end
     end 
       
@@ -313,7 +346,7 @@ module Code
   class_property vars_int32 = { } of String => Int32 
   class_property vars_string = { } of String => String
   class_property skip_lines = false
-  class_property functions = { } of String => Hash(String,(String|Int32))  
+  class_property functions = { } of String => Hash(String,(String|Int32|Float64|Array(Int32|String|Float64)))  
   class_property cfu = "main"   # current function
   @@jmp_trigger = -1
   @@current_line = 0
@@ -373,14 +406,18 @@ module Code
           if VARS["debug"]
             print "end found: ","in line: ",@@current_line+1,"\n"
           end
-          eval2(line)  # we need to evalute end
+          eval2(line)  # we need to evalute end to have the current context
         elsif  # keep track of if/end context
           if @@line.includes?("if ")  
-            CONTEXTS.push("in_if #{@@current_line+1}")
+            CONTEXTS.push("in_if #{@@current_line+1} skip")
           end
+           elsif  #kepp track of while/end block
+            if @@line.includes?("while ")  
+              CONTEXTS.push("in_while #{@@current_line+1} skip")
+            end
           else
           puts "Skipping Line" if VARS["debug"]
-            end
+            end  # end of skip lines block ------------------------------------------------
 
       if @@jmp_trigger != -1 # we got a valid line number !?
           @@current_line = @@jmp_trigger.to_i 
@@ -467,18 +504,16 @@ module Code
       varname, cmp , value = @@rols
 
        if cmp == "<" #check operator
-        #result = _lower_("#{varname} #{cmp} #{value}", 3)
-         #if (@@vars_int32[varname] < value.to_i)
-         if (@@functions[Code.cfu][varname].to_i < value.to_i)
-           puts "while < is true: ",@@functions[Code.cfu][varname].to_i if VARS ["debug"]
-           result = 1
-         else
-           result = 0
-         end  
+           if (@@functions[Code.cfu][varname].as(Int32) < value.to_i)
+             puts "while < is true: ",@@functions[Code.cfu][varname].as(Int32) if VARS ["debug"]
+             result = 1
+           else
+             result = 0
+           end   
        elsif
         cmp == ">"
         #result = _higher_("#{varname} #{cmp} #{value}", 3)
-         if (@@functions[Code.cfu][varname].to_i > value.to_i)
+         if (@@functions[Code.cfu][varname].as(Int32) > value.to_i)
            result = 1
          else
            result = 0
@@ -611,7 +646,7 @@ end
       varname, cmp , value = @@rols
        if cmp == "<" #check operator
         #result = _lower_("#{varname} #{cmp} #{value}", 3)
-         if (@@functions[Code.cfu][varname].to_i < value.to_i)
+         if (@@functions[Code.cfu][varname].as(Int32) < value.to_i)
            result = 1
          else
            result = 0
@@ -619,7 +654,7 @@ end
        elsif
         cmp == ">"
         #result = _higher_("#{varname} #{cmp} #{value}", 3)
-         if (@@functions[Code.cfu][varname].to_i > value.to_i)
+         if (@@functions[Code.cfu][varname].as(Int32) > value.to_i)
            result = 1
          else
            result = 0
@@ -633,7 +668,7 @@ end
     if y == 4   # "if a eq 1" - equal operator
       _if_,varname,cmp,value = @@rols
       #p!  _if_, varname, cmp, value
-      if @@functions[Code.cfu][varname].to_i == value.to_i   # equal ???
+      if @@functions[Code.cfu][varname].as(Int32) == value.to_i   # equal ???
         result = 1
       else
         result = 0
@@ -693,16 +728,16 @@ end
 #add_fun()=
 def add_fun(name,vars,line)
   print "add_fun() " if VARS["debug"]
-  @@functions[name] = { "line"  => line, "sign" => vars } 
+  @@functions[name] = Hash(String, Array(Float64 | Int32 | String) | Float64 | Int32 | String).new
+  #@@functions[name] = { "line"  => line, "sign" => vars, "val" => 0.0, "array" => [0,"nul",0.1] } 
 end
-
 # lower "<" operator
 def _lower_(x : String, y : Int32)
   # counter < 10
   p! "lower()",x,y if VARS["debug"]
   varname, operand, val = @@rols
   value = val.to_i
-  if Code.functions[Code.cfu][varname].to_i < value
+  if Code.functions[Code.cfu][varname].as(Int32) < value
     return 1
   else
     return 0
@@ -713,38 +748,47 @@ end
 #end of Code module
 
 class Timer
-  property name ="Test Name"
+  @@name ="Timer"
+  @@inst=0
 
   def initialize
-    puts "New instance started"
-    p! self.name
-    p! self.object_id
+    @@inst+=1
+    puts "New instance starting: ",@@inst
   end  
 
-def timer_test(x , y)
+# x = job,interval
+def start_timer(x , y)
 if y >=2
   interval = x.split(" ")[0]
   job = x.split(" ")[1..].join(" ") # get the rest of line
-    puts "timer_test called with interval: #{interval}" 
+    puts "timer #{@@inst} started with interval: #{interval}" 
     eval ("stop = 0")
     return if interval == ""
-    eval ("interval = #{interval.to_i}")      #try to set a hash value
-    if Code.vars_int32.has_key?("interval")   #check if the var really exists now
-      puts "Var interval exists"
-      puts "Message from Timer, type >stop = 1 to stop all started timers"
-    end
-    spawn {
+    
+    puts "Message from Timer, type:\n>stop = number or -1 to stop all started timers"
+    writevar("timer.instances",@@inst)
+
+    inst = @@inst # handle the current instance
+    spawn {   #spawn this timer job block and return
       loop do
+        writevar("timer.inst.#{inst}","job=\"#{job}\"")
         eval job   
-        sleep (Code.vars_int32["interval"])
-        break if Code.vars_int32["stop"] == 1
+        sleep interval.to_i
+        if readvar("stop").as(Int32) == -1 || readvar("stop").as(Int32) == inst 
+          puts "timer #{inst} stopped"
+          eval "delete timer.inst.#{inst}"  
+          break
+        end   
       end
     }
+    return "",inst
  else
   puts "Method needs at least 2 arguments"
+  return "",0
  end 
 end 
-end
+
+end #end of class Timer
 
 #call function after x seconds
 def _after_(x : String, y : Int32)  
@@ -807,17 +851,21 @@ end
 # a = b
 def let(x : String,y : Int32)
   p! "let()",x,y if VARS["debug"]
+   
    con = CONTEXTS # store current context on start of line, context may change later in the line
    varname = Code.rols[0]  
    if varname.to_i?
       print "numbers can't be var names\n"
       return
-   end    
+   end
+
+   varname = varname.consume_cfu
    value = Code.rols[3..].join(" ") # rest of line
    word = Code.rols[2]
    
    t,v = _typeof_(word,1) #is it a proc ?
-
+ 
+   
    if t == "proc"
     if KWS.has_key?(word)
       y1 = y - 3 # we cant use y here, because it is already used !!!
@@ -844,11 +892,16 @@ def let(x : String,y : Int32)
    end
   
   if t == "fun"   #is it a fun ?
-   check_fun(word,x)   #pass the whole line to the called function, needed for return
+   check_fun(word,x)   #pass the whole line to the called function, needed for processing return
    return
   end 
 
   value = Code.rols[2..].join(" ") # rest of line
+
+  if t == "float64"
+    writevar(varname,value.to_f)
+    return
+  end
 
    if (value[0] == '"' && value[-1] == '"')  # its a quoted string
       flag1 = true
@@ -856,13 +909,35 @@ def let(x : String,y : Int32)
     flag1 = false
    end  
 
-   if !(flag1 || value.to_i?)         # if its inside quotes or an int it is for sure no var
+   if !(flag1 || value.to_i?)       # if its inside quotes or an int it is for sure no var
       value = check_name(value)     # lets see it the var really exists and get its value
    end  
-   
-   #check if we are in a function 
-   #vars needs to be stored in function context
-   writevar(varname,value)
+
+
+  #vars needs to be stored in function context
+  if t  == "string"   
+      value = value.as(String)    # is needed for calling unquote
+      #Error: no overload matches 'unquote' with type (Float64 | Int32 | String)
+      value,flag = unquote(value)            
+      writevar(varname,value) 
+      return  
+   end   
+
+   if t  == "int32"            #if input is an int then store as int  
+    writevar(varname,value.to_i)
+    return
+    end
+  
+
+  if t == "unknown type"
+    if Code.rols[2].includes?(".")       # support dot naming
+      word,word2 = word.split(".")       # first use for Array.new() 
+      lside,rside = ROL[0].split("= ")
+       eval(rside)  
+       writevar(varname,Code.functions["eval"]["res"])
+    end   
+  end
+  
 end
 
 #check_name()=
@@ -876,7 +951,11 @@ end
 
   if x.to_i?    #just a number ?
     return x 
- end   
+  end   
+
+  if x.to_f?
+    return x
+  end  
 
  if x.includes?(" ") #it is no valid varname, includes a blank
    return x 
@@ -903,12 +982,29 @@ return x if flag == true
  # return value.to_s
  #end
 
- if Code.functions[Code.cfu].has_key?(x)
+if Code.functions[Code.cfu].has_key?(x)
   value = Code.functions[Code.cfu][x].to_s
   value = value.gsub("_"," ")  # underscore -> blank
   value,flag = unquote value 
   return value
- end
+end
+
+
+ if x.includes?("[")  # read value from an array
+  varname,index = x.split("[")
+  index,rest = index.split("]")
+  index = index.to_i
+  value = readvar(varname).as(Array)[index]
+  if value.as?(String)
+    return value.as(String)
+  elsif
+    value.as?(Int32)
+    return value.as(Int32)
+  else
+    value.as?(Float64)
+    return value.as(Float64)
+  end
+ end 
 
  fn = "check_name"
  print fn + "():\n" if VARS["debug"]
@@ -919,6 +1015,9 @@ end
 #check if a var with that name exists
 #and return the value, give no error
 def replace_var(x : String)
+  p! x if VARS["debug"]
+  return x if x.size == 0
+   
   if x.to_i?    #just a number ?
      return x 
   end   
@@ -948,7 +1047,7 @@ def replace_var(x : String)
 
   if Code.functions[Code.cfu].has_key?(x)
     value = Code.functions[Code.cfu][x]
-    return value.to_s 
+    return value 
   end
  
   fn = "replace_var"
@@ -1025,7 +1124,7 @@ def _higher_(x : String, y : Int32)
   p! "higher()",x,y if VARS["debug"]
   varname, operand, val = Code.rols
   value = val.to_i
-  if Code.functions[Code.cfu][varname].to_i > value
+  if Code.functions[Code.cfu][varname].as(Int32) > value
     return 1
   else
     return 0
@@ -1047,14 +1146,18 @@ def _typeof_(x : String, y : Int32)
     res = "string"; v=1
   elsif x.to_i?; 
     res = "int32"; v=2
+  elsif x.to_f?; 
+    res = "float64"; v=3
   elsif KWS.has_key?(x)
-    res = "proc" ; v=3
+    res = "proc" ; v=4
   elsif Code.functions.has_key?(x)
-    res = "fun"; v=4
+    res = "fun"; v=5
+  elsif Code.functions[Code.cfu].has_key?(x)  
+    res = "var"; v=6  
   elsif Code.vars_string.has_key?(x)
-    res = "var-string"; v=5
+    res = "var-string"; v=7
   elsif Code.vars_int32.has_key?(x)
-    res = "var-int32"; v=6
+    res = "var-int32"; v=8
   else 
     res = "unknown type"; v=-1
   end
@@ -1094,10 +1197,10 @@ def _def_(x : String, y : Int32)
     vars = x.split(" ")[1]
     vars = vars[1..-2] # remove parens
   else  # no args, just a placeholder
-    vars = "args"
+    vars = "noargs"
   end  
   if name && line
-    CONTEXTS.push("in_def #{Code.current_line+1}")
+    CONTEXTS.push("in_def #{Code.current_line+1} skip")
     Code.skip_lines=true 
     Code.add_fun(name,vars,line)
   end 
@@ -1112,17 +1215,19 @@ def check_fun(word,rol)
   end
   if Code.functions.has_key?(word)
     Code.functions[word]["args"] = rol
-    funstart = Code.functions[word]["line"]
+    funstart = Code.functions[word]["line"].as(Int32)   
     varname_from_sign = Code.functions[word]["sign"].to_s
-    Code.functions[word][varname_from_sign] = replace_var(rol) # pass arguments to function by value
+    if varname_from_sign != "noargs"
+      Code.functions[word][varname_from_sign] = replace_var(rol) # pass arguments to function by value
+    end
     if VARS["debug"]
-      print "starting function: ",word," in line ",funstart.to_i+1,"\n" 
+      print "starting function: ",word," in line ",funstart,"\n" 
       print "pushing line: ",Code.current_line+1,"\n"
       p! word,rol,Code.functions[word]["sign"]
     end
     STACK.push(Code.current_line)
     CONTEXTS.push("in_function #{word}")
-    Code.current_line = funstart.to_i
+    Code.current_line = funstart
     Code.cfu=word
     p! CONTEXTS if VARS["debug"]
     if VARS["interactive"]
@@ -1163,7 +1268,7 @@ Code.rols.each { |word|
      p! word if VARS["debug"]  
      nres,flag = unquote(word) # quoted string ? 
      nres = check_name(nres) if flag == 1 # check if vars to replace 
-   newrols << nres
+   newrols << nres.as(String)
    } 
 p! newrols if VARS["debug"] 
 return newrols.join(" ")  
@@ -1182,7 +1287,7 @@ def replace_vars(rol)
   newrols=[] of String  
   Code.rols.each { |word| 
        res = replace_var(word) # check if vars to replace
-     newrols << res
+     newrols << res.to_s
      } 
   
   return newrols.join(" ")  
@@ -1240,3 +1345,55 @@ def readvar(varname)
 def writevar(varname,value)
    Code.functions[Code.cfu][varname] = value
 end 
+
+
+#construct an array
+#store the array in function "eval" context
+#Array.new(1,2,3)   #first item is name of array
+def _array_(x : String, y : Int32)
+  method,param = x.split(" ")
+  param = param[1..-2]  # remove ()
+  if method == "new"
+      params = param.split(",")
+      a = Array(String|Int32|Float64).new
+      params.each { |elem|
+       r, flag = unquote(elem)
+       if r.to_i?
+          r=r.to_i if flag == 1
+       end
+       if r.class == (String) 
+          r=r.as(String)
+          if r.includes?(".")
+             r=r.to_f if flag == 1
+          end    
+       end    
+       a << r
+       }
+     a.clear if param.size == 0  
+     Code.functions["eval"]["res"] = a.as(Array(String|Int32|Float64))
+  end
+end  
+
+#append to an array
+# "a << b"
+# of type Int32|String|Float64
+def _append_(x : String, y : Int32)
+  method_err("append",x); return if y !=3  # 3 tokens expected here
+  namea, append, nameb = Code.rols
+  invar = check_name(nameb) # can be a value or a proc or function
+  invar,flag = unquote(invar.as(String))
+  invar = invar.to_i if invar.to_i? && flag == 1  # convert string to number if not quoted
+  Code.functions[Code.cfu][namea].as(Array) << invar # finally append to var name in function context
+end  
+
+#consume() first part of dot named varname 
+#if name matches current function
+class String
+  def consume_cfu
+      if self.starts_with?(Code.cfu)
+         return self[Code.cfu.size+1..]
+      else
+         return self   
+      end
+  end      
+end  
