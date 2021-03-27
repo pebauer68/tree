@@ -44,7 +44,9 @@ def repl
     if VARS["filename"].to_s.size > 1
       print "Error in: #{line}\n", ex.message, "\n"
       print "in File: #{VARS["filename"]} Line: #{Code.current_line+1}\n"
-    end  
+    else
+      print "Error: ",ex.message, "\n"
+    end    
   
       if Code.functions["main"]["trace"].as(Int32) == 1
         ex.backtrace.each { |line|
