@@ -9,6 +9,7 @@ VARS = {
   "started"  => true,       #used in prompt()
   "debug"    => false,      #toggle debug message output by entering debug
   "singlestep" => false,    #toggle singlestepping 
+  "inject"   => false,      #toggle inject
   "filename" => "",         #currrent file loaded
   "lines"    => 0,          #number of lines 
   "interactive" => true,    #more output in interaktive mode than in run mode
@@ -343,6 +344,7 @@ module Code
   class_property lines = 0
   class_property current_line = 0
   class_property line = ""             #current line of code
+  class_property injected_line = ""    #injected line of code
   class_property rols = [] of String   #current line of code splitted in array
   class_property last_line = 0
   class_property vars_int32 = { } of String => Int32 
@@ -426,6 +428,9 @@ module Code
           @@jmp_trigger = -1 # reset trigger
           print "run(),Jumping to: ",@@current_line+1," ",@@codelines[@@current_line],"\n" if VARS["debug"]
       else
+        if VARS["inject"]
+          Code.inject()
+        end    
         @@current_line += 1
       end  
       
@@ -452,6 +457,21 @@ module Code
     VARS["interactive"] = true
     Code.cfu="main"
   end # of run code
+
+  #inject()
+  #a line of code into a running interpreter session
+  #via a text file 
+  def inject()
+    if File.file?("line.txt")
+      file = File.new("line.txt")
+      if file.size > 0
+        @@injected_line = file.gets_to_end.chomp 
+        eval(@@injected_line)
+        file.delete
+        file.close
+      end
+    end  
+  end
   
   #split_run()=
   #split codelines into tokens

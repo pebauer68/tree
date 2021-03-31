@@ -280,7 +280,9 @@ def div(in1 : Int32, in2 : Int32)Int32
 end
 
   
-  # increment var value 
+  # increment var value
+  # works for int32
+  # gives error for float 
   def inc(x : String, y : Int32)
     if y == 1 
       Code.functions[Code.cfu][x] = Code.functions[Code.cfu][x].as(Int32) + 1   

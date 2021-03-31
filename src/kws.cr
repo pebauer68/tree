@@ -41,6 +41,7 @@ KWS = {
   "help" => ->(x : String, y : Int32) { help(x); return "",0 },
   "debug" => ->(x : String, y : Int32) { VARS["debug"] = !VARS["debug"]; return VARS["debug"].to_s,0 },
   "singlestep" => ->(x : String, y : Int32) { VARS["singlestep"] = !VARS["singlestep"]; return VARS["singlestep"].to_s,0 },
+  "inject" => ->(x : String, y : Int32) { VARS["inject"] = !VARS["inject"]; return VARS["inject"].to_s,0 },
   "system" => ->(x : String, y : Int32) { _system_(x); },
   "exit" => ->(x : String, y : Int32) { exit(0); return "",0 },
   "Array" => ->(x : String, y : Int32) { _array_(x,y); return "",0 },
