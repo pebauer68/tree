@@ -14,8 +14,8 @@ puts line
 line = split_operator_from_var(s4,"+")
 puts line
 end
-#quoted_test()
 
+#quoted_test()
 #split operator of type String by blank
 def split_operator_from_var(line,operator)
     offs = 0
@@ -43,8 +43,21 @@ end
 #argument char defines the quotes used
 #e.g. " or ' or any other char
 def inside_quotes?(char,line,pos)
-   offs = 0
-   qpos = line.index(char)  # find first opening quote
+   rline = line[pos..]
+   q = rline.count(char)
+   return nil if q.even? 
+   qpos = pos-1  # find first opening quote before pos
+   c=""
+   while true
+     c=line[qpos]
+     break if c == char
+     if qpos > 0
+      qpos-=1
+     else
+      return nil # nothing found on reverse search
+     end  
+   end 
+   offs = qpos
    qflag = true
    while qpos
       qpos2 = line.index(char,offs) # find closing quotes
@@ -58,18 +71,18 @@ def inside_quotes?(char,line,pos)
 end     
 
 def unquote(x : String) # returns string
-  if VARS["debug"]
+  if Code.debug
    puts "unquote()"
    p! x 
   end
   return x,1 if x.size < 3
   if (x[0] == '"' && x[-1] == '"') #quotes ?
      x=x.gsub('"',"")   # remove ""
-     x=x.gsub('_',' ')  # underscore -> blank
-     p! x if VARS["debug"]
+     x=x.gsub("\xc2\x9d",' ')  # special utf char -> blank
+     p! "returns:",x if Code.debug
      return x,0
   else
-     puts "nothing to unquoute" if VARS["debug"]
+     puts "nothing to unquoute" if Code.debug
      return x,1 
   end   
 end  
