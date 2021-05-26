@@ -279,8 +279,9 @@ module Code
     @@running = false
     extend self
    
-    #load code into the
-    #String array  
+    #load()
+    #load scripting code into the
+    #codelines String array  
     def load(filename)
       if File.exists?(filename)
         fd = File.open(filename)
@@ -304,7 +305,7 @@ module Code
   
     #run()=
     #run code
-    #run s # single step mode on
+    #arg: s # single step mode on
     def run(arg)
       return if VARS["filename"] == ""
       VARS["interactive"] = false
@@ -404,7 +405,10 @@ module Code
   
     #inject()
     #a line of code into a running interpreter session
-    #via a text file 
+    #via a text file with the name "line.txt" in the
+    #current working dir
+    #enable/disable on the command line with:
+    #inject 
     def inject()
       if File.file?("line.txt")
         file = File.new("line.txt")
@@ -419,6 +423,8 @@ module Code
   
     #insert()=
     #a line of code into codelines
+    #args: line number as Sting followed by a Blank char
+    #and the code as String
     def insert(x,y)
       if y >= 2
         line = Code.rols[0].to_i
@@ -433,19 +439,22 @@ module Code
   
     #write()=
     #used to overwrite an existing codeline
+    #args: line number as Sting followed by a Blank char
+    #and the code as String
     def write(x,y) 
       if y >= 2
         line = Code.rols[0].to_i
         code = Code.rols[1..].join(" ")
         @@codelines[line-1]=code
       else # at least two args needed
-        fn = "insert"
+        fn = "write"
         method_err(fn,x,y) 
       end   
     end
   
     #delete()=
     #a line of code by number from codelines
+    #arg: line number as String
     def delete(x) 
       line = Code.rols[0].to_i
         code = Code.rols[1..].join(" ")
@@ -466,7 +475,7 @@ module Code
         print "Current line:",@@current_line+1,"\n" if Code.debug
         print "Split line: ", line," ",line.size, "\n" if Code.debug
         ary = [] of String
-        if (!(line.starts_with?("#") || _print_(line).size == 0 ))  # skip comment lines and empty lines
+        if (!(line.starts_with?("#") || line.size == 0 ))  # skip comment lines and empty lines
           ary = full_split(line)
           @@codelines[@@current_line] = ary.join(" ")  # write line back to codelines 
           @@splitlines << ary # write ary to split_lines
@@ -489,7 +498,7 @@ module Code
   
     #list()=
     #list the code
-    #String arg can be "lines" or "splits"
+    #arg: "lines" or "splits"
     #default is "lines"
     def list(arg,default="lines")
       line=0
